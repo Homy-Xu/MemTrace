@@ -1,0 +1,6 @@
+MemTrace
+Copyright 2026 Homy Xu
+
+The repository includes adapters for third-party benchmark runners and
+optional integrations. Their licenses remain with their respective authors.
+See the dependency metadata and upstream projects for their terms.

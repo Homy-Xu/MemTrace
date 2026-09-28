@@ -1,0 +1,28 @@
+{
+  "schema": "memtrace/release-gate@1",
+  "package_version": "0.1.0",
+  "source_digest": "79879bd06c29b22fed69b211cec44fe9ce209e242e8da4e859c2d1b4424f2f27e2",
+  "wheel_sha256": "164aa197c8c9a57b2db3ebf78cbfce82e7597ee0105a113fd7a014229096115a",
+  "offline": {
+    "pytest": {
+      "status": "PASSED",
+      "tests": 87
+    },
+    "compileall": "PASSED",
+    "ruff_fatal": "PASSED",
+    "clean_install": "PASSED",
+    "installed_receipt": "verified-installed-package"
+  },
+  "real_smoke": {
+    "status": "BLOCKED",
+    "reason": "No provider model or API credential was present in the release environment.",
+    "combinations": [
+      "codex+swe-milestone",
+      "codex+deepswe",
+      "codex+swe-evo",
+      "mini-swe-agent-2.4.6+swe-milestone",
+      "mini-swe-agent-2.4.6+deepswe",
+      "mini-swe-agent-2.4.6+swe-evo"
+    ]
+  }
+}

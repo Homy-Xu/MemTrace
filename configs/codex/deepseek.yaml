@@ -1,0 +1,18 @@
+{
+  "provider": {
+    "id": "deepseek",
+    "name": "DeepSeek",
+    "base_url": "https://api.deepseek.com",
+    "api_key_env": "DEEPSEEK_API_KEY",
+    "wire_api": "responses",
+    "model": "deepseek-flash"
+  },
+  "stages": {
+    "planning": true,
+    "page_store": true,
+    "semantic_memory": true,
+    "recall": true,
+    "context_runtime": true,
+    "rich_graph": true
+  }
+}

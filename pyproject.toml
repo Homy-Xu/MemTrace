@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "memtrace"
+version = "0.1.0"
+description = "Addressable working context for long-running coding agents"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {file = "LICENSE"}
+authors = [{name = "Homy Xu"}]
+dependencies = ["PyYAML>=6.0"]
+
+[project.optional-dependencies]
+codex = ["openai-codex-cli-bin==0.144.4"]
+mini-swe-agent = ["mini-swe-agent==2.4.6"]
+benchmarks = ["datasets>=2.18"]
+dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6"]
+
+[project.scripts]
+memtrace = "memtrace.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+memtrace = ["_build_receipt.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

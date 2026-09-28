@@ -1,0 +1,17 @@
+{
+  "provider": {
+    "id": "openai",
+    "name": "OpenAI",
+    "wire_api": "responses",
+    "model": "${MEMTRACE_CODEX_MODEL}",
+    "api_key_env": null
+  },
+  "stages": {
+    "planning": true,
+    "page_store": true,
+    "semantic_memory": true,
+    "recall": true,
+    "context_runtime": true,
+    "rich_graph": true
+  }
+}

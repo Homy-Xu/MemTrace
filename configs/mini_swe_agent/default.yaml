@@ -1,0 +1,16 @@
+model:
+  model_class: litellm
+  model_name: ${MEMTRACE_MINISWE_MODEL}
+environment:
+  environment_class: local
+agent:
+  agent_class: default
+  system_template: |
+    You are a helpful coding assistant working in the supplied repository.
+  instance_template: |
+    Please solve this issue: {{task}}
+
+    Work directly in the repository, run focused tests, and leave the working
+    tree with the requested change.
+  cost_limit: 0
+  wall_time_limit_seconds: 900
