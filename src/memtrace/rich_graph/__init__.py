@@ -1,4 +1,4 @@
-"""Optional, non-blocking Rich Code Graph for the clean V2 runtime."""
+"""Optional, non-blocking Repository State Graph for the clean V2 runtime."""
 
 from .models import (
     STRUCTURAL_RELATIONS,

@@ -1513,7 +1513,7 @@ class MemoryNeedDetector:
         """Recognize an actual model-visible virtual-address access.
 
         A file or symbol name is ordinary repository work and is not proof
-        that compressed history was used.  Automatic Page Faults are created
+        that compressed history was used. Automatic context-refresh events are created
         only when a model-authored event contains the opaque MemoryRef itself;
         structured ``recall_memory`` requests are parsed separately above.
         """

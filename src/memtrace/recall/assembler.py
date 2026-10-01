@@ -33,7 +33,7 @@ _CATEGORY = {
 
 
 def public_evidence_handle(page_slice: PageSlice) -> str:
-    """Return a stable, model-safe reference without exposing a Page address."""
+    """Return a stable, model-safe reference without exposing an internal trace address."""
 
     if page_slice.section_handle is not None:
         return page_slice.section_handle
@@ -50,9 +50,9 @@ def public_evidence_handle(page_slice: PageSlice) -> str:
 class ContextAssembler:
     """Render recovered history through one bounded delivery-envelope kernel.
 
-    Page slices carry the facts; the surrounding provenance is control
+    Trace slices carry the facts; the surrounding provenance is control
     metadata.  The latter must never grow without bound or make an otherwise
-    valid Page address fatal under Provider pressure.  Assembly therefore
+    valid trace address fatal under Provider pressure. Assembly therefore
     keeps evidence content unchanged while degrading optional metadata through
     explicit FULL, COMPACT and MINIMAL profiles.
     """
@@ -224,9 +224,9 @@ class ContextAssembler:
         page_relations: Iterable[Mapping[str, object]] = (),
         max_tokens: int | None = None,
     ) -> RecoveredContextBlock:
-        """Render an addressed Page section without the search-result envelope.
+        """Render an addressed trace section without the search-result envelope.
 
-        A MemoryRef is a virtual address, not a query seed.  Its Page-in frame
+        A Memory Anchor is a virtual address, not a query seed. Its Memory Loading frame
         therefore carries the resolved address, revision and actual selected
         section body.  Search diagnostics, repository hints and graph
         relations are absent unless the model explicitly requested relation
@@ -473,7 +473,7 @@ class ContextAssembler:
         page_id: str,
         page_digest: str,
     ) -> object:
-        """Remove runtime Page addresses while preserving historical payload."""
+        """Remove runtime trace addresses while preserving historical payload."""
 
         if isinstance(value, Mapping):
             result: dict[str, object] = {}

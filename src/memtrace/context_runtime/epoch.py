@@ -159,7 +159,7 @@ class ThreadLifecycle:
                     raise RuntimeError("run already has a different initial Epoch")
                 # The ordinal-0 digest records the image at Epoch creation. It
                 # must not be compared with the current ContextImage during a
-                # process resume: normal actions, revision advances and Page-In
+                # process resume: normal actions, revision advances and Memory Loading
                 # legitimately evolve that image without creating a new Epoch.
                 active = connection.execute(
                     """SELECT epoch_id FROM context_epochs

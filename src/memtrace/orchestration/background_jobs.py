@@ -158,9 +158,9 @@ class BackgroundJobs:
         *,
         revision_id: str | None = None,
     ) -> dict[str, tuple[str, ...]]:
-        """Symbols the Rich Graph knows inside ``paths`` (for Page finalization).
+        """Symbols the Repository State Graph knows inside ``paths``.
 
-        The Semantic Graph stores facts at file granularity; attaching the
+        The MTG stores facts at file granularity; attaching the
         structural symbols of a changed file gives later MemoryRefs a
         symbol-level address without re-parsing the Page body.
         """

@@ -699,11 +699,12 @@ class ExecutionCoordinator:
             )
 
     def _migrate_page_relation_intent_addresses(self) -> None:
-        """Replace the old Page-only relation target with one stable address contract.
+        """Replace the old trace-only relation target with one stable address contract.
 
-        A causal Evidence Event is durable before its semantic Page is necessarily
-        sealed.  Persisting that Event address lets ordinary Page finalization do
-        the Event-to-Page translation without forcing an early page boundary.
+        A causal Evidence Event is durable before its Memory Trace is necessarily
+        consolidated. Persisting that Event address lets ordinary trace
+        consolidation do the Event-to-trace translation without forcing an early
+        boundary.
         """
 
         connection = self.registry.database.connection
@@ -896,7 +897,7 @@ class ExecutionCoordinator:
                     ),
                     "established_facts": list(self._active_transition_facts()),
                     "rule": (
-                        "Continue the current official milestone from these durable TPG/Page "
+                        "Continue the current official milestone from these durable MTG/trace "
                         "surfaces. Do not restart repository discovery. Revalidate an old fact "
                         "only when its anchored file or symbol changed at this revision."
                     ),
@@ -1073,7 +1074,7 @@ class ExecutionCoordinator:
 
         Raw Provider events are authoritative and are written before any
         Context mutation. Scanning them closes the crash window between a
-        durable CONTEXT_COMPACTED fact and preparation of its Working Set
+        durable CONTEXT_COMPACTED fact and preparation of its Working Memory
         refresh without replaying Provider actions or creating an Epoch.
         """
 
@@ -1151,7 +1152,7 @@ class ExecutionCoordinator:
             )
             if receipt.delivery_state is DeliveryState.TRANSPORT_ACCEPTED:
                 self.context_transport.request_task_continuation(
-                    "Continue the same task from the durable post-compaction Working Set refresh."
+                    "Continue the same task from the durable post-compaction Working Memory refresh."
                 )
             transport_method = receipt.transport_method
             delivery_state = receipt.delivery_state
@@ -1164,7 +1165,7 @@ class ExecutionCoordinator:
                 delivery_kind="PROVIDER_COMPACTION_REFRESH",
             )
             self.context_transport.request_task_continuation(
-                "Continue the same task and observe the durable post-compaction Working Set refresh."
+                "Continue the same task and observe the durable post-compaction Working Memory refresh."
             )
             transport_method = "DURABLE_DELIVERY_RECOVERY"
             delivery_state = record.state
@@ -1195,11 +1196,11 @@ class ExecutionCoordinator:
         )
 
     def _pending_recall_entity_refs(self) -> tuple[str, ...]:
-        """Entities already being delivered are resident for Fault arbitration.
+        """Entities already being delivered are resident for refresh arbitration.
 
         The Provider cannot observe an injected block until a later protocol
         action. Treating every lifecycle notification in the meantime as a new
-        access creates duplicate Page-Ins for one semantic use.
+        access creates duplicate Memory Loading operations for one semantic use.
         """
 
         return tuple(
@@ -1383,12 +1384,12 @@ class ExecutionCoordinator:
         """Translate an observed compressed-entity access without re-searching.
 
         A nonresident entity is observable only because the runtime previously
-        placed one or more MemoryRef synopses in the Provider Working Set.  The
-        Page IDs carried by those synopses are therefore already the semantic
+        placed one or more MemoryRef synopses in the Provider Working Memory.  The
+        trace IDs carried by those synopses are therefore already the semantic
         address; converting the entity back into EvidenceKeys would discard
-        that address and turn a Page fault into a second search problem.
+        that address and turn a refresh into a second search problem.
 
-        Several historical synopses may mention the same file.  Working-Set
+        Several historical synopses may mention the same file. Working-Memory
         locality provides the deterministic tie-break: prefer a synopsis from
         the active Milestone and current workspace revision, then the nearest
         preceding synopsis in the ContextImage route order.  This is address
@@ -1535,7 +1536,7 @@ class ExecutionCoordinator:
 
         Context artifacts are only a residency cache. A model-visible
         ``MemoryRef`` remains valid after its synopsis is demoted or evicted,
-        so Page Store manifests are the authoritative fallback.
+        so Trace Store manifests are the authoritative fallback.
         """
 
         if not memory_ref.startswith("memoryref_"):
@@ -2094,7 +2095,7 @@ class ExecutionCoordinator:
         memory_need: MemoryNeed | None,
         memory_use: tuple[MemoryUseAttribution, ...],
     ) -> bool:
-        """Keep provider telemetry out of the semantic Page/Event stream."""
+        """Keep provider telemetry out of the Memory Trace/event stream."""
 
         if facts or memory_need is not None or memory_use:
             return True
@@ -3221,7 +3222,7 @@ class ExecutionCoordinator:
 
         A requirement whose addresses are frozen is bound by direction: the
         executed command or its touched paths must name one of the addresses
-        (token overlap), or the Rich Graph must know that the executed test
+        (token overlap), or the Repository State Graph must know that the executed test
         covers, calls or imports them.  A requirement that still has no
         address (learning window) or an explicit selector keeps the permissive
         binding; selector matching is decided downstream by the extractor.
@@ -3462,7 +3463,7 @@ class ExecutionCoordinator:
         """Close the run at this durable boundary once its budget is spent.
 
         A harness kill leaves no receipt.  Here the queued continuation is
-        discarded, the current Milestone closes its PageSet with a
+        discarded, the current Milestone closes its Memory Episode with a
         ``ROUTE_STALLED`` receipt whose reason names the budget, and the driver
         stops scheduling Turns.  A run that already reached a terminal Task
         state, or that queued no further Turn, needs no closure.
@@ -4337,7 +4338,7 @@ class ExecutionCoordinator:
         accept_unverified_semantic: bool = False,
         accept_unverified_missing: bool = False,
     ) -> MilestoneVerificationBatch:
-        """Run Milestone acceptance and close the PageSet of every decided Milestone."""
+        """Run Milestone acceptance and close the Memory Episode of every decided Milestone."""
 
         batch = self._verifier.verify_claimed_milestones(
             self.request.run_id,
@@ -4364,11 +4365,11 @@ class ExecutionCoordinator:
         return batch
 
     def _commit_terminated_milestone_page_set(self) -> None:
-        """At run end, close the PageSet of a Milestone that never reached acceptance.
+        """At run end, close the Memory Episode of a Milestone that never reached acceptance.
 
-        Every Page must belong to exactly one logical PageSet, so an
+        Every Page must belong to exactly one logical Memory Episode, so an
         interrupted or budget-terminated Milestone still gets a terminal
-        ``TASK_TERMINATED`` PageSet for recovery and audit.
+        ``TASK_TERMINATED`` Memory Episode for recovery and audit.
         """
 
         try:
@@ -4405,12 +4406,12 @@ class ExecutionCoordinator:
         source_event_id: str,
         stall_reason: str | None = None,
     ) -> Mapping[str, object] | None:
-        """Commit the logical PageSet of a Milestone at one of its terminal states.
+        """Commit the logical Memory Episode of a Milestone at one of its terminal states.
 
-        PageSet boundaries are Milestone boundaries: the WAL window comes from
+        Memory Episode boundaries are Milestone boundaries: the WAL window comes from
         the Milestone state cursors, never from byte counts.  The synopsis is the
         resident summary (acceptance receipt, touched entities, decisions) that
-        replaces the Milestone's Pages in the Working Set once it cools down.
+        replaces the Milestone's Pages in the Working Memory once it cools down.
         """
 
         try:
@@ -6642,7 +6643,7 @@ exit 0
         """Raise the engagement level one step on a real pressure signal.
 
         Milestone granularity was frozen at Planning; escalation only deepens
-        the runtime's steering (Route Card depth, Working Set cooling).  The
+        the runtime's steering (Route Card depth, Working Memory cooling).  The
         move is monotonic and recorded in trace, metrics and ``result.json``.
         """
 
@@ -7680,13 +7681,13 @@ exit 0
         return tuple(scope)
 
     def _structural_scope(self, current: CurrentMilestone) -> frozenset[str]:
-        """Rich-derived neighbourhood used for Working Set heat.
+        """Rich-derived neighbourhood used for Working Memory heat.
 
         Derived only from the CodeMap already rendered for this Milestone's
-        route card: the per-action Working Set update never issues its own
-        graph query, so the Rich Graph stays off the route path (a Task that
+        route card: the per-action Working Memory update never issues its own
+        graph query, so the Repository State Graph stays off the route path (a Task that
         never received a CodeMap keeps the recency-only rule).  Values are in
-        the shapes the Working Set stores: bare file paths for
+        the shapes the Working Memory stores: bare file paths for
         MODIFIED/ACCESSED_FILE rows and entity ids for symbols.
         """
 
@@ -7749,7 +7750,7 @@ exit 0
         """Rich-derived structural map of the current Milestone scope.
 
         Scope = the Milestone contract's addresses ∪ files changed so far in
-        this run ∪ the predecessor PageSet's touched entities.  Each file entry
+        this run ∪ the predecessor Memory Episode's touched entities.  Each file entry
         also names the latest resident/compressed Page MemoryRefs that touched
         it, so the model can orient itself (which symbols, who calls them,
         which tests cover them) without re-reading files after eviction or
@@ -10411,7 +10412,7 @@ exit 0
         manifest: PageManifest,
         changed_files: tuple[str, ...],
     ) -> None:
-        """Widen a sealed Page's address index with Rich-Graph symbols.
+        """Widen a sealed Page's address index with Repository State Graph symbols.
 
         Codex reports code changes per file.  When the background graph has
         already projected those files, the symbols they define become
@@ -10478,7 +10479,7 @@ exit 0
     ) -> Mapping[str, object]:
         """Render useful resident facts instead of raw Provider event JSON.
 
-        Page Store remains the immutable authority. This view is the logical
+        Trace Store remains the immutable authority. This view is the logical
         Working-Set body used before pressure and after an unsolicited Provider
         compaction. Externalized facts are resolved here so a code observation
         can restore the text the model previously read. Context admission may
@@ -11165,7 +11166,7 @@ exit 0
                 # compiled as CODE_CHANGE) an execution protocol failure. In
                 # navigation mode only an observed failing predicate blocks;
                 # absent evidence is folded as UNVERIFIED by the bounded
-                # acceptance reducer below. This keeps the five-stage map and
+                # acceptance reducer below. This keeps the shared lifecycle map and
                 # Page/Evidence history intact without turning it into an
                 # approval workflow.
                 if self._navigation_only_acceptance and not factual.failed_criteria:
@@ -12663,7 +12664,7 @@ exit 0
     def _provider_compaction_resident_handoff(
         self,
     ) -> tuple[tuple[Mapping[str, object], ...], frozenset[str]]:
-        """Restore the active logical Working Set after physical compaction.
+        """Restore the active logical Working Memory after physical compaction.
 
         Provider compaction does not run Context admission and therefore must
         not silently demote every Page-backed artifact to a MemoryRef.  The
@@ -12671,7 +12672,7 @@ exit 0
         SEMANTIC_SLICE artifacts for the active Milestone remain resident.
         Rehydrate the newest non-overlapping artifacts within one bounded
         payload; artifacts already demoted to summaries/handles/nonresident
-        remain address-only and continue through normal Page Fault handling.
+        remain address-only and continue through normal Context Refresh handling.
         """
 
         current_milestone_id = self.registry.current(self.request.run_id).identity_id
@@ -12920,12 +12921,12 @@ exit 0
         self,
         current: CurrentMilestone,
     ) -> tuple[Mapping[str, object], ...]:
-        """Restore a small exact Page surface for the next Epoch.
+        """Restore a small exact trace surface for the next Epoch.
 
-        A page table alone is an address space, not an executable working set.
+        A memory index alone is an address space, not executable Working Memory.
         At a physical boundary we can deterministically open at most two
         route-local Pages and carry their bounded, untrusted historical body
-        into the replacement Thread. This is the same Page-in kernel used by
+        into the replacement Thread. This is the same Memory Loading kernel used by
         ``recall_memory``; it does not add a model Turn or an approval gate.
         """
 

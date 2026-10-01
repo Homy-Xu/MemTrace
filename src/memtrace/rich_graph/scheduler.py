@@ -763,7 +763,7 @@ class RichGraphScheduler:
         """Return a bounded, model-safe structural search result.
 
         Search is deliberately a read-only hint over committed projections.
-        It never waits for the worker, creates Evidence, or changes TPG state.
+        It never waits for the worker, creates Evidence, or changes MTG state.
         An unprojected file is reported as BUILDING/NO_MATCH and may be queued
         for the existing background worker.
         """

@@ -11,7 +11,7 @@ from .contracts import SIDE_EFFECT_ITEM_TYPES, HarnessEvent, HarnessEventType
 
 
 class RawHarnessEventLedger:
-    """Durable provider telemetry kept outside the Semantic Page stream."""
+    """Durable provider telemetry kept outside the Memory Trace stream."""
 
     def __init__(self, database: StateDatabase) -> None:
         self.database = database
@@ -155,7 +155,7 @@ class CodexEventMapper:
                 path = path.resolve().relative_to(base)
             except (OSError, ValueError):
                 # External reads are not addresses in the repository's
-                # Semantic Page Table.
+                # Memory Index.
                 return None
         normalized = path.as_posix().removeprefix("./")
         if not normalized or normalized == "." or normalized.startswith("../"):
@@ -168,7 +168,7 @@ class CodexEventMapper:
 
         Codex already classifies ordinary shell commands as read/search/list
         actions.  Preserving their paths at the Harness boundary gives the
-        Semantic Page Table stable ``file:...`` addresses instead of opaque
+        Memory Index stable ``file:...`` addresses instead of opaque
         tool call IDs.
         """
 

@@ -1,4 +1,4 @@
-"""V2 exact-evidence page-fault and context recovery subsystem."""
+"""V2 exact-evidence Trace Recall and Context Recovery subsystem."""
 
 from .assembler import ContextAssembler, public_evidence_handle
 from .coverage import CoverageTracker, PageBodyEvidence

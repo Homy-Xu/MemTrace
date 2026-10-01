@@ -60,7 +60,7 @@ def durable_reasoning_frontier(
     """Return model-owned semantic deltas that advance the reasoning frontier.
 
     This is shared by runtime continuity and Batch supervision. Provider
-    messages, tool activity, Page faults and generic progress narration are
+    messages, tool activity, context refreshes and generic progress narration are
     deliberately absent.
     """
 
@@ -1819,14 +1819,14 @@ class SemanticStore:
         groups: tuple[EventGroup, ...],
         event_positions: Mapping[str, tuple[int, int] | int],
     ) -> PageProjectionReceipt:
-        """Project a durable Page inside the Page Store's short commit transaction.
+        """Project a durable Memory Trace inside the Trace Store commit transaction.
 
         The method never commits and never reads a Page body. Any validation error
         propagates so the Page Map transaction can roll back and recovery can retry.
         """
 
         if not groups:
-            raise ValueError("Semantic Page projection requires complete EventGroups")
+            raise ValueError("Memory Trace projection requires complete EventGroups")
         if tuple(group.group_id for group in groups) != manifest.event_group_ids:
             raise ValueError("Manifest/EventGroup order mismatch")
         if any(
@@ -3163,8 +3163,8 @@ class SemanticStore:
     ) -> tuple[PageCandidate, ...]:
         """Dereference a runtime-owned MemoryRef without semantic re-search.
 
-        ``page_ids`` are immutable Page addresses recovered from the opaque
-        MemoryRef.  A PageSet directory may translate that address to the one
+        ``page_ids`` are immutable trace addresses recovered from the opaque
+        MemoryRef.  A Memory Episode directory may translate that address to the one
         requested semantic segment, but neither Evidence ranking nor graph
         recency is allowed to replace the address.  The addressed Page itself
         remains the fallback when the directory has no more precise entry.
@@ -3193,7 +3193,7 @@ class SemanticStore:
         *,
         limit: int = 8,
     ) -> tuple[PageCandidate, ...]:
-        """Bridge Rich Graph reference identities back to Semantic Pages.
+        """Bridge Repository State Graph identities back to Memory Traces.
 
         Rich structure is address assistance only. It selects immutable Pages
         that already recorded the referenced file/symbol; the Recall service
@@ -3300,7 +3300,7 @@ class SemanticStore:
         include_starting: bool = False,
         allow_nearest: bool = True,
     ) -> tuple[str, ...]:
-        """Route through a PageSet directory before opening physical siblings."""
+        """Route through the episode directory before opening physical siblings."""
 
         starting = tuple(dict.fromkeys(str(item) for item in page_ids if str(item)))
         if not starting or limit <= 0:
@@ -4365,7 +4365,7 @@ LIMIT ?
         plan_version_id: str | None = None,
         pages_per_milestone: int = 2,
     ) -> Mapping[str, object]:
-        """Render the bounded Semantic Graph route consumed at Milestone boundaries."""
+        """Render the bounded MTG route consumed at Execution Milestone boundaries."""
 
         if pages_per_milestone < 0 or pages_per_milestone > 4:
             raise ValueError("pages_per_milestone must be between zero and four")
@@ -5127,9 +5127,9 @@ LIMIT ?
         *,
         plan_version_id: str | None = None,
     ) -> Mapping[str, object]:
-        """Project the full TPG into one bounded model-visible working card.
+        """Project the full MTG into one bounded model-visible Working Memory card.
 
-        The Semantic Graph remains complete and authoritative in external
+        The Memory Trace Graph remains complete and authoritative in external
         storage.  A continuation Turn needs only the current route node, its
         observable outcomes, nearby skeleton nodes, stable Page addresses,
         and the current workspace receipt. Internal Criterion, Evidence,
@@ -5303,11 +5303,11 @@ LIMIT ?
         revision_id: str,
         symbols_by_path: Mapping[str, Sequence[str]],
     ) -> tuple[str, ...]:
-        """Attach Rich-Graph symbol addresses to an already projected Page.
+        """Attach Repository State Graph symbol addresses to an already projected Page.
 
-        The Page body and its descriptor stay immutable; this only widens the
-        Semantic Page Table index so that a later MemoryRef or address
-        resolution that names a symbol (``symbol:path:Name``) reaches the Page
+        The trace body and its descriptor stay immutable; this only widens the
+        Memory Index so that a later MemoryRef or address resolution that names
+        a symbol (``symbol:path:Name``) reaches the trace
         that changed the file defining it.  Returns the newly attached symbol
         entity IDs (existing rows are left alone).
         """
@@ -5380,11 +5380,11 @@ LIMIT ?
         revision_id: str,
         stall_reason: str | None = None,
     ) -> Mapping[str, object]:
-        """Close the logical PageSet of one Milestone at a terminal boundary.
+        """Consolidate the Memory Episode of one Execution Milestone at a terminal boundary.
 
-        The PageSet is the Milestone-level unit of the Semantic Page Table: it
-        lists every Page sealed for the Milestone, and its synopsis carries the
-        only content that stays resident in the Working Set once the Milestone
+        The Memory Episode is the milestone-level unit of the Memory Index: it
+        lists every trace consolidated for the milestone, and its synopsis carries
+        the only content that stays resident in Working Memory once the milestone
         cools down -- the acceptance receipt summary, the touched entities and
         the durable implementation decisions.  Page bodies remain evictable
         and are re-opened through the MemoryRefs recorded here.
@@ -5583,7 +5583,7 @@ LIMIT ?
         *,
         milestone_identity_id: str | None = None,
     ) -> tuple[dict[str, object], ...]:
-        """Return committed Milestone PageSets, oldest first."""
+        """Return committed Milestone Memory Episodes, oldest first."""
 
         conn = self.database.connection
         if milestone_identity_id is None:

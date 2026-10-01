@@ -1,6 +1,6 @@
 """Provider-neutral harness contracts used by all benchmark adapters.
 
-The five-stage runtime consumes durable :class:`HarnessEvent` objects.  A
+The memory runtime consumes durable :class:`HarnessEvent` objects.  A
 backend may expose richer native features, but it must report the same basic
 session, plan, event, usage, checkpoint, and close lifecycle.
 """

@@ -12,7 +12,7 @@ from .page_store import PagePolicy
 
 
 class ConfigurationError(ValueError):
-    """Raised before Planning when a V2 stage combination is not runnable."""
+    """Raised before Planning when a V2 runtime combination is not runnable."""
 
 
 _PROVIDER_ID = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
@@ -116,7 +116,7 @@ class StageConfiguration:
         disabled = tuple(name for name, enabled in required.items() if not enabled)
         if disabled:
             raise ConfigurationError(
-                "V2 formal runner requires the complete five-stage chain; disabled: "
+                "V2 formal runner requires the complete memory runtime; disabled: "
                 + ", ".join(disabled)
             )
 
@@ -126,7 +126,7 @@ class RunBudgetConfiguration:
     """Per-run hard budget that ends a Task at a durable boundary.
 
     A benchmark harness usually kills a run that exceeds its slot; the kill
-    leaves no ``result.json``, no terminal PageSet and no acceptance receipt.
+    leaves no ``result.json``, no terminal Memory Episode and no acceptance receipt.
     The runtime instead stops itself: the budget is checked at every Turn end
     (and the wall clock also inside a long Turn) and the current Milestone is
     closed with a ``ROUTE_STALLED`` receipt whose reason names the budget.
@@ -169,7 +169,7 @@ class EngagementConfiguration:
     escalate_on_provider_pressure: bool = True
     escalate_on_epoch: bool = True
     escalate_on_verification_failure: bool = True
-    # Predecessor Milestones kept HOT in the Working Set below FULL.
+    # Predecessor Milestones retained in Working Memory below FULL.
     retain_predecessor_milestones: int = 1
 
     def validate(self) -> None:

@@ -1144,7 +1144,7 @@ class RunCoordinator:
                 )
                 resume_prompt = (
                     "Resume the SAME Task, Attempt, Codex Thread, Milestone, workspace, "
-                    "WAL, Page Store and Semantic Graph route. This is not permission to restart "
+                    "trace ledger and Memory Trace Graph route. This is not permission to restart "
                     "from the base repository. Inspect the current route, workspace state, existing "
                     "tool/test evidence and failure signals. "
                     + recovery_guidance
@@ -1221,7 +1221,7 @@ class RunCoordinator:
                     # captured before a prior Epoch/Turn committed its patch.
                     # The revision tracker is the authoritative WAL-backed
                     # observation at execution start; rejecting it here loses
-                    # the very workspace continuity that Page/TPG recovery is
+                    # the very workspace continuity that trace/MTG recovery is
                     # meant to preserve. Reconcile the execution cursor and
                     # retain both IDs in the trace instead of restarting the
                     # task from the baseline.
@@ -1278,7 +1278,7 @@ class RunCoordinator:
                 ):
                     execution_task = (
                         "Resume the SAME repository Task and Codex Thread from the authoritative "
-                        "repository_execution route card, current workspace revision, TPG, Pages "
+                        "repository_execution route card, current workspace revision, MTG, Memory Traces "
                         "and recovered code surfaces below. The original Task remains in Thread "
                         "history; do not restart from its first requirement or re-audit unchanged "
                         "files. Revalidate a recalled fact only when its anchored file or symbol "

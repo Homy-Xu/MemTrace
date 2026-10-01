@@ -82,7 +82,7 @@ class _PreparedGroup:
 
 @dataclass(frozen=True, slots=True)
 class _PageSetDirectoryEntry:
-    """Bounded semantic routing metadata for one physical PageSet segment."""
+    """Bounded trace-routing metadata for one physical segment."""
 
     segment_index: int
     title: str
@@ -151,13 +151,14 @@ def _page_manifest_from_dict(value: Mapping[str, Any]) -> PageManifest:
 
 
 class PageStore:
-    """Authoritative V2 Event WAL and immutable semantic Page store.
+    """Authoritative V2 event ledger and immutable Trace Store.
 
     Every public append accepts one *complete logical* EventGroup. The group is
     recursively redacted before any persistent write and is represented by
-    exactly one synced WAL record. A logical group whose bounded metadata does
-    not fit one Page is deterministically represented as an atomic PageSet of
-    complete physical EventGroups; ordinary groups retain the one-group path.
+    exactly one synced ledger record. A logical group whose bounded metadata
+    does not fit one trace is deterministically represented as an atomic
+    Memory Episode of complete physical event groups; ordinary groups retain
+    the one-group path.
     """
 
     def __init__(
@@ -227,8 +228,8 @@ class PageStore:
 
         This is the recovery boundary for Planning and other projections: a
         caller may rebuild derived state without asking the Harness to repeat
-        an already-observed turn. Physical PageSet segments are reassembled to
-        their original redacted logical EventGroup at this boundary, so Page
+        an already-observed turn. Physical segments are reassembled to their
+        original redacted logical EventGroup at this boundary, so storage
         sizing never leaks into Planning or Registry semantics.
         """
 
@@ -260,7 +261,7 @@ class PageStore:
         return tuple(result)
 
     def open_groups(self) -> tuple[EventGroup, ...]:
-        """Return only synced groups still forming the next semantic Page.
+        """Return only synced groups still forming the next Memory Episode.
 
         Local Step verification uses this authoritative view so a short Step
         does not have to violate the minimum Page-size policy merely to prove
@@ -331,7 +332,7 @@ class PageStore:
         return decoded
 
     def resolve_fact_content(self, fact: EvidenceDraft) -> Mapping[str, Any]:
-        """Resolve one WAL fact without sealing its open semantic Page."""
+        """Resolve one ledger fact without sealing its open Memory Episode."""
 
         external = fact.content.get("external_fact")
         if not isinstance(external, Mapping):
@@ -715,7 +716,7 @@ class PageStore:
                 return sealed[-1] if sealed else None
 
     def _append_page_set(self, prepared: _PreparedPageSet) -> PageManifest:
-        """Commit and seal one logical oversized group as an ordered PageSet."""
+        """Commit and consolidate one oversized group as an ordered episode."""
 
         existing = self._page_set_row(prepared.logical_group_id)
         if existing is not None:

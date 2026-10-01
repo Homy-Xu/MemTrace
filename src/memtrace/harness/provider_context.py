@@ -248,7 +248,7 @@ class ProviderContextLedger:
         unaccounted_provider_tokens: int = 0,
         minimum_useful_tokens: int = 256,
     ) -> int:
-        """Bound Page-In against observable Provider headroom.
+        """Bound Memory Loading against observable Provider headroom.
 
         Normal and soft contexts may admit only up to the urgent boundary.
         Urgent contexts use a small slice of the remaining hard-boundary

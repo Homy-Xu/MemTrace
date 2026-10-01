@@ -622,7 +622,7 @@ class WorkspaceStateAuthority:
         Git workspaces receive a full binary patch against their prepared HEAD,
         including untracked files without mutating the index. Non-Git
         workspaces still receive a durable manifest receipt and remain
-        recoverable from the workspace/Page Store, but cannot claim a portable
+        recoverable from the workspace/Trace Store, but cannot claim a portable
         patch representation.
         """
 

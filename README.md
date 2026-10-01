@@ -1,6 +1,6 @@
 <div align="center">
   <h1>MemTrace</h1>
-  <p><strong>Addressable working context for long-running coding agents</strong></p>
+  <p><strong>State-consistent memory for long-horizon coding agents</strong></p>
   <p>
     <a href="https://github.com/Homy-Xu/MemTrace/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-2ea44f?style=flat-square" alt="Apache 2.0 license"></a>
     <img src="https://img.shields.io/badge/python-3.11%2B-3776ab?style=flat-square&logo=python&logoColor=white" alt="Python 3.11 or newer">
@@ -10,14 +10,17 @@
 </div>
 
 <div align="center">
-  <img src="docs/overview.png" alt="MemTrace architecture: memory traces, addressable context, and validated recall" width="96%">
+  <img src="docs/overview.png" alt="MemTrace: memory traces, working memory, state alignment, and validated restoration" width="96%">
 </div>
 
-MemTrace gives coding agents a durable, addressable working context. It turns
-execution history into memory pages, keeps a small active working set, and
-recalls only the evidence needed for the current repository state.
+MemTrace helps coding agents continue long-horizon repository work after their
+active context has been refreshed. It records execution as immutable **Memory
+Traces**, binds each trace to the repository state in which it was produced,
+and keeps only the evidence needed for the next action in **Working Memory**.
+Historical evidence is restored only after it has been aligned with the current
+task and repository state.
 
-The same five-stage runtime supports two execution backends:
+The runtime exposes the same provider-neutral lifecycle to two backends:
 
 - **Codex App Server** — native JSONL events, planning, workspace revisions,
   memory-tool callbacks, and context recovery.
@@ -31,22 +34,24 @@ The same five-stage runtime supports two execution backends:
 - [Run a Harness](#-run-a-harness)
 - [Benchmark adapters](#-benchmark-adapters)
 - [Receipts and reproducibility](#-receipts-and-reproducibility)
+- [Terminology](#-terminology)
 - [Project layout](#-project-layout)
 - [Limitations](#-limitations)
 - [License](#-license)
 
 ## 🧠 Architecture
 
-The runtime keeps the control plane and provider telemetry separate while
-sharing one event and receipt contract:
+MemTrace addresses **task-state drift** and **state-memory misalignment**. The
+method has three connected responsibilities:
 
-1. **Planning and Milestone state** — freeze task scope and execution stages.
-2. **WAL and page storage** — persist workspace facts and page updates.
-3. **Semantic memory and Rich Graph** — index reusable conclusions and code
-   relationships.
-4. **Evidence-keyed recall** — admit only task-relevant, validated evidence.
-5. **Context runtime** — manage working sets, compaction, checkpoints, and
-   recovery.
+1. **Memory Trace formation** — consolidate completed observations, edits, test
+   outcomes, decisions, and corrections with repository and provenance anchors.
+2. **MTG–RSG alignment** — connect the Memory Trace Graph (MTG), which records
+   execution relations, with the Repository State Graph (RSG), which describes
+   the current files, symbols, and tests.
+3. **Validated restoration** — localize Trace Candidates, perform Trace
+   Validation and State Alignment Checks, and load only the evidence required
+   to continue from the Execution Frontier.
 
 The provider-neutral lifecycle is:
 
@@ -54,8 +59,9 @@ The provider-neutral lifecycle is:
 start_session → plan → next_event / execute → checkpoint → resume → usage → close
 ```
 
-See [docs/architecture.md](docs/architecture.md) for the data flow and
-[docs/overview.pdf](docs/overview.pdf) for the full architecture illustration.
+See [docs/architecture.md](docs/architecture.md) for the method-level data
+flow and [docs/overview.pdf](docs/overview.pdf) for the architecture
+illustration.
 
 ## ⚡ Installation
 
@@ -83,8 +89,9 @@ outside Git.
 
 ## 🚀 Run a Harness
 
-Use a fresh run root for every task. A run root contains WAL, SQLite state,
-checkpoints, trajectories, and receipts and is never reused across attempts.
+Use a fresh run root for every task. A run root contains the event ledger,
+durable trace state, checkpoints, trajectories, and receipts and is never
+reused across attempts.
 
 ### Codex App Server
 
@@ -140,14 +147,15 @@ container, provider socket, label, or receipt.
 
 ## 🧪 Benchmark adapters
 
-The public adapters keep benchmark-specific concerns outside the core runtime:
+The public adapters keep benchmark-specific concerns outside the memory
+runtime:
 
 - **SWE-Milestone** — repository streams, official evaluator handoff, and
   immutable attempt receipts.
 - **DeepSWE** — multilingual task/image bridges, provider isolation, and
   infrastructure-failure classification.
-- **SWE-EVO** — version-jump tasks, continuous Milestones, host-managed
-  verification, and fixture-contamination checks.
+- **SWE-EVO** — version-jump tasks, continuous Execution Milestones,
+  host-managed verification, and fixture-contamination checks.
 
 Full benchmark datasets, hidden tests, private prompts, cluster launch scripts,
 and raw trajectories remain outside this repository.
@@ -161,8 +169,8 @@ class. Receipts are append-only and redact credentials and private filesystem
 paths.
 
 Public manifests distinguish a complete campaign, rerun, score-only regrade,
-infrastructure failure, and model-quality failure. Historical results are kept
-with provenance and are never silently combined into a new benchmark claim.
+infrastructure failure, and model-quality failure. Historical results retain
+their provenance and are never silently combined into a new benchmark claim.
 
 ```bash
 python -m compileall -q src
@@ -173,23 +181,33 @@ The release smoke matrix and its current gate status are in
 [docs/reproducibility.md](docs/reproducibility.md) and
 [results/manifests/release-gate.json](results/manifests/release-gate.json).
 
+## 📚 Terminology
+
+The canonical vocabulary is documented in
+[docs/terminology.md](docs/terminology.md). It is shared with the paper and
+should be used in new documentation, experiment reports, and issue
+discussions. Stable implementation identifiers and historical receipt fields
+remain available for compatibility.
+
 ## 🗂️ Project layout
 
 ```text
 src/memtrace/
 ├── core runtime contracts and persistence
-├── planning/             Plan and Milestone state
-├── page_store/           durable memory pages
-├── semantic_memory/      reusable implementation conclusions
-├── recall/               evidence retrieval and admission
-├── context_runtime/      working sets, compaction, checkpoints
-├── rich_graph/           optional structural indexing
+├── planning/             task and Execution Milestone state
+├── page_store/           compatibility implementation for the Trace Store
+├── semantic_memory/      trace localization and repository alignment
+├── recall/               Trace Recall and validated restoration
+├── context_runtime/      Working Memory, compaction, checkpoints
+├── rich_graph/           optional Repository State Graph indexing
 ├── harness/codex/        Codex App Server backend
 ├── harness/mini_swe_agent/  mini-swe-agent 2.4.6 backend
 └── benchmarks/           shared runner and benchmark bridges
 ```
 
-The README structure follows the concise research-code presentation used by
+The source-level `page_store` name is retained for compatibility with existing
+integrations; the public concept is **Trace Store**. The README structure
+follows the concise research-code presentation used by
 [RepoGraph](https://github.com/ozyyshr/RepoGraph) and
 [Paper2Code](https://github.com/going-doer/Paper2Code). The paired
 representation and reconstruction boundary is inspired by

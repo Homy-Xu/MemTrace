@@ -108,12 +108,12 @@ class MilestoneReviewProposal:
 
 
 class CodexPlanNormalizer:
-    """Fail-closed compiler from a native Codex Plan to the TPG route.
+    """Fail-closed compiler from a native Codex Plan to the MTG route.
 
     The immutable native snapshot remains planning authority. The typed output
     groups source items into stage-level Milestones, records their observable
     outcomes, and preserves only the active stage's preliminary work as
-    lightweight TPG cursors. These cursors guide ordinary Coding without becoming Provider
+    lightweight MTG cursors. These cursors guide ordinary Coding without becoming Provider
     Turn boundaries, approval gates, or a second proof language.
     """
 
@@ -138,7 +138,7 @@ class CodexPlanNormalizer:
 
     @staticmethod
     def initial_projection_schema() -> dict[str, Any]:
-        """Expose only the semantic choices required to seed the initial TPG.
+        """Expose only the semantic choices required to seed the initial MTG.
 
         Stable identities, linear dependencies, Criterion mappings, final
         acceptance and status are runtime-owned. This publication groups the
@@ -994,7 +994,7 @@ class CodexPlanNormalizer:
         # to the terminal Milestone silently dropped requirements that were
         # implemented earlier in the route and made a weakened Plan self-
         # consistent.  Stable Criterion IDs let the final pass reuse the same
-        # TPG/Page evidence without rescanning the repository.
+        # MTG/trace evidence without rescanning the repository.
         final_acceptance = self._final_acceptance_from_milestones(compiled)
         final_verification = tuple(
             dict.fromkeys(
@@ -1098,7 +1098,7 @@ class CodexPlanNormalizer:
         """Derive the execution-visible label from the immutable Task scope.
 
         Provider Plan titles remain useful provenance, but they are proposals
-        about how to work. Reusing them as the TPG node label allowed a
+        about how to work. Reusing them as the MTG node label allowed a
         suggested "update docs" action to strengthen a Task requirement that
         only said "verify docs". The route label therefore comes from the
         already-validated Task excerpt and cannot add another action modality.
@@ -1337,7 +1337,7 @@ class CodexPlanNormalizer:
         """Create the sole runtime-owned route owner for a stage skeleton.
 
         This Step contains no repository strategy and opens no Provider Turn.
-        It simply gives naturally produced execution Evidence a stable TPG
+        It simply gives naturally produced execution Evidence a stable MTG
         address until the Milestone boundary is reached.
         """
 
@@ -2436,7 +2436,7 @@ class CodexPlanNormalizer:
 
         A selector is the stable address of the fact that will satisfy a
         Criterion.  Planning and execution must therefore classify that
-        address identically before the Plan enters the WAL/TPG.  Accepting a
+        address identically before the Plan enters the WAL/MTG.  Accepting a
         generic ``TOOL_RESULT`` contract for a command that execution can only
         emit as ``TEST_RESULT`` creates an impossible route state: the action
         happened, but the Criterion can never observe its typed Evidence.

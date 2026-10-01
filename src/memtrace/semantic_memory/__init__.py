@@ -1,4 +1,4 @@
-"""Synchronous semantic page table; independent from optional Rich Graph state."""
+"""Synchronous Memory Index; independent from optional RSG state."""
 
 from .contracts import (
     EntityResolutionResult,

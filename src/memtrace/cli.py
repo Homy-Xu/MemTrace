@@ -21,7 +21,7 @@ from .orchestration.planning_coordinator import WorkspaceReadOnlyGuard
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="homy-v2",
-        description="Independent Plan/Milestone-driven long-running coding runtime V2",
+        description="State-consistent long-running coding runtime V2",
     )
     subcommands = parser.add_subparsers(dest="command", required=True)
     run = subcommands.add_parser("run", help="run with Codex App Server or an offline scenario")
@@ -35,7 +35,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     run.add_argument("--harness", choices=("codex", "scenario"))
     run.add_argument("--repository-stream", type=Path,
-                     help="SWE-Milestone repository-session contract; keep WAL/TPG across releases")
+                     help="SWE-Milestone repository-session contract; keep trace state and MTG relations across releases")
     run.add_argument(
         "--multilang-plan", action="store_true",
         help="opt in to non-Python native Plan input compatibility",
@@ -73,7 +73,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     run.add_argument("--resume-thread-id")
     benchmark = subcommands.add_parser(
-        "benchmark", help="run an offline benchmark through the five-stage coordinator"
+        "benchmark", help="run an offline benchmark through the shared memory runtime"
     )
     benchmark.add_argument("--scenario", type=Path, required=True)
     for command in (run, benchmark):
@@ -85,7 +85,7 @@ def _parser() -> argparse.ArgumentParser:
         command.add_argument("--legacy-branch-id", default="main")
 
     validate = subcommands.add_parser(
-        "validate-config", help="validate all stage dependencies before Planning"
+        "validate-config", help="validate runtime dependencies before Planning"
     )
     validate.add_argument("--config", type=Path)
 
@@ -445,7 +445,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 )
             if args.legacy_page_root is not None:
                 if harness != "scenario":
-                    raise ValueError("legacy Page import is only available with scenario harness")
+                    raise ValueError("legacy trace import is only available with scenario harness")
                 if not args.legacy_run_id:
                     raise ValueError("--legacy-run-id is required with --legacy-page-root")
                 imported = LegacyPageReader(args.legacy_page_root).read(

@@ -137,8 +137,8 @@ class CodexHarnessDriver:
             separators=(",", ":"),
         )
         initial_prompt = (
-            "Execute the current stage-level Milestone in the TPG Route Card, not a future "
-            "Milestone. Use the native Plan as a working outline while the TPG remains the "
+            "Execute the current Execution Milestone in the execution route, not a future "
+            "Milestone. Use the native Plan as a working outline while the MTG remains the "
             "execution-state authority. Work naturally and continuously in this Turn: investigate, "
             "edit and test in the order that best solves the task. Repository actions are written "
             "to WAL and attributed to the current route node in the background; do not pause to "
@@ -152,7 +152,7 @@ class CodexHarnessDriver:
             "Treat acceptance obligations as properties to demonstrate, not as control paperwork. "
             "Derive expected behavior from the Task, repository specification or public tests, "
             "never from the implementation being verified. Use ordinary repository tools and "
-            "tests; the runtime captures their outcomes automatically. Do not emit or manage Page, "
+            "tests; the runtime captures their outcomes automatically. Do not emit or manage Memory Trace, "
             "Evidence, Criterion or verifier IDs. Exceptional review or semantic-control tools are "
             "used only when a runtime receipt explicitly asks for one. The one exception is "
             "record_semantic_update: after a coherent investigation establishes a reusable "
@@ -163,12 +163,12 @@ class CodexHarnessDriver:
             "semantic updates are reserved for conclusions genuinely worth reusing. Do not "
             "record an intended next "
             "code action or ordinary progress "
-            "message. Recall a MemoryRef only when "
+            "message. Load a Memory Anchor only when "
             "its visible access_state is NONRESIDENT_IN_PROVIDER_CONTEXT and recall_required is "
             "true; recovered content in this Turn can be used directly.\n\n"
             f"Task:\n{user_task}"
             f"{self._sandbox_budget_note()}"
-            "\n\nAuthoritative TPG Route Card and workspace receipt:\n"
+            "\n\nAuthoritative MTG route and workspace receipt:\n"
             f"{route_scope}"
         )
         if self._context_transport.needs_followup_turn:
@@ -192,7 +192,7 @@ class CodexHarnessDriver:
             initial_prompt = (
                 continuation_prompt
                 + self._sandbox_budget_note()
-                + "\n\nCurrent Semantic Graph route and workspace receipt:\n"
+                + "\n\nCurrent Memory Trace Graph route and workspace receipt:\n"
                 + route_scope
             )
         else:
@@ -1167,7 +1167,7 @@ class CodexHarnessDriver:
         mapper.update_revision(receipt.revision_id)
         # The ReferenceDirectory is the authoritative, revision-scoped
         # Symbol -> File address index and has already durably stored the full
-        # catalog returned by capture().  A Semantic Page represents what this
+        # catalog returned by capture().  A Memory Trace represents what this
         # action changed; copying every unchanged symbol from a touched file
         # into it both blurs that meaning and creates unbounded EvidenceKey
         # metadata that cannot be externalized as a Blob.

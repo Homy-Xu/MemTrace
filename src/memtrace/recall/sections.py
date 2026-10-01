@@ -18,11 +18,11 @@ def semantic_section_handle(
     event_group_ids: Sequence[str],
     event_ids: Sequence[str],
 ) -> str:
-    """Return the stable public address of one semantic Page section.
+    """Return the stable public address of one semantic trace section.
 
-    A MemoryRef addresses the immutable Page (or PageSet segment).  The section
+    A Memory Anchor addresses the immutable Memory Trace (or Episode segment). The section
     handle narrows that address to complete EventGroup boundaries without
-    exposing a Page ID, byte range, or repository search key.
+    exposing an internal trace ID, byte range, or repository search key.
     """
 
     if not event_group_ids or not event_ids:

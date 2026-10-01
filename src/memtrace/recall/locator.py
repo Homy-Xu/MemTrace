@@ -19,7 +19,7 @@ class LocatedCandidates:
 
 
 class SemanticLocator:
-    """Thin guard around indexed Semantic Graph address translation."""
+    """Thin guard around indexed Memory Resolution."""
 
     def __init__(self, semantic_index: ExactSemanticIndex) -> None:
         self.semantic_index = semantic_index
@@ -41,7 +41,7 @@ class SemanticLocator:
             if not candidate.payload_digest or candidate.estimated_tokens <= 0:
                 continue
             # Exact-revision exclusion is repeated defensively at the boundary;
-            # branch-lineage visibility remains the indexed store/PageStore's job.
+            # branch-lineage visibility remains the indexed Trace Store's job.
             if intent.require_exact_revision and candidate.revision_id != intent.revision_id:
                 continue
             if not required.intersection(candidate.evidence_key_digests):
@@ -80,7 +80,7 @@ class CandidateRanker:
             gain = len(missing_key_digests.intersection(candidate.evidence_key_digests))
             # FTS/recent-related candidates deliberately cannot claim exact key
             # Coverage.  Once such a stage really executes, a candidate is given
-            # one unit of *estimated* gain solely for I/O ordering; only Page body
+            # one unit of *estimated* gain solely for I/O ordering; only trace body
             # verification can turn that estimate into Coverage.
             if gain <= 0 and hint_key_digests is not None:
                 gain = len(

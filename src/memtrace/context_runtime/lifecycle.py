@@ -725,7 +725,7 @@ class ContextLifecycle:
         return self._pending.get(delivery_id)
 
     def pending_recall_deliveries(self) -> tuple[PendingDelivery, ...]:
-        """Expose in-flight Page-In bodies for deterministic duplicate-Fault suppression."""
+        """Expose in-flight loaded bodies for deterministic duplicate-fault suppression."""
 
         return tuple(self._pending.values())
 
@@ -959,12 +959,12 @@ class ContextLifecycle:
         *,
         focus_terms: tuple[str, ...] = (),
     ) -> tuple[tuple[str, ...], tuple[str, ...]]:
-        """Page out older recovered bodies so a new exact section can enter.
+        """Offload older recovered bodies so a new exact section can enter.
 
-        Recovered slices are a bounded working set, not immortal copies of the
-        Page Store. If a different exact section cannot be admitted, demote the
-        older bodies back to their MemoryRef summaries and retry on the same
-        Thread. The immutable Pages and addresses remain authoritative.
+        Recovered slices are bounded Working Memory, not immortal copies of the
+        Trace Store. If a different exact section cannot be admitted, demote the
+        older bodies back to their Memory Anchor summaries and retry on the same
+        Thread. Immutable traces and anchors remain authoritative.
         """
 
         incoming_address = self._virtual_section_address(block)
@@ -1160,7 +1160,7 @@ class ContextLifecycle:
         focus_terms: tuple[str, ...] = (),
         active_step_id: str | None = None,
     ) -> tuple[tuple[str, ...], tuple[str, ...]]:
-        """Return unpinned Page-In bodies to a compact summary/handle state."""
+        """Return unpinned loaded bodies to a compact synopsis/anchor state."""
 
         replacements: dict[str, ContextArtifact] = {}
         released_pages: set[str] = set()

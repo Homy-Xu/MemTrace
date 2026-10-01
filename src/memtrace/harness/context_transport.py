@@ -143,7 +143,7 @@ class CodexContextTransport:
         self._turn_fences: dict[str, TurnFenceRequest] = {}
         # Payloads accepted by Codex but not yet reflected in a later physical
         # token observation are admission debt.  Without this ledger, several
-        # individually bounded Page-Ins can collectively refill a freshly
+        # individually bounded Memory Loading operations can collectively refill a freshly
         # compacted Provider context before the next usage event arrives.
         self._unaccounted_provider_tokens = 0
         self._awaiting_usage_reconciliation_tokens = 0
@@ -208,7 +208,7 @@ class CodexContextTransport:
 
         A repository-stream Task can span several bounded process invocations.
         Closing one invocation discards its queued physical continuations,
-        while the WAL, TPG, Page Store and Codex Thread remain resumable by the
+        while the trace ledger, MTG, Trace Store and Codex Thread remain resumable by the
         next invocation. This is deliberately distinct from a Task verdict.
         """
 
@@ -304,7 +304,7 @@ class CodexContextTransport:
             except AppServerProtocolError as error:
                 if not error.is_closed_turn_steer():
                     raise
-                # The Page Fault was already durable before transport.  A
+            # The context-refresh request was already durable before transport.  A
                 # Provider may close the Turn in the narrow interval between
                 # its last item notification and this request. Preserve the
                 # same Delivery for the next Turn instead of losing the task
@@ -366,7 +366,7 @@ class CodexContextTransport:
         *, delivery_id: str, context_digest: str, rendered_content: str
     ) -> str:
         return (
-            "ProviderCompactionRecovery (durable Working Set refresh)\n"
+            "ProviderCompactionRecovery (durable Working Memory refresh)\n"
             f"delivery_id={delivery_id}\n"
             f"context_digest={context_digest}\n\n"
             f"{rendered_content}"
@@ -489,7 +489,7 @@ class CodexContextTransport:
                     "execution handoff instead of repeating unchanged investigation. Re-read "
                     "exact code only when the relevant Page detail is absent or truncated, or "
                     "when the workspace revision changed. Call recall_memory before relying on "
-                    "a compressed MemoryRef."
+                    "a compressed Memory Anchor."
                 )
             ),
         )
@@ -609,7 +609,7 @@ class CodexContextTransport:
                 if self._native_origin == "AUTOMATIC_OR_PROVIDER":
                     # This runtime did not request the compaction. Its explicit
                     # completion event is sufficient to restore the logical
-                    # Working Set and continue; token reduction remains
+                    # Working Memory and continue; token reduction remains
                     # observability and never gates recovery.
                     self._native_episode_complete = True
                 else:
@@ -650,7 +650,7 @@ class CodexContextTransport:
                 if event.event_type is not HarnessEventType.TURN_STARTED:
                     continue
                 # ``thread/compact/start`` returns before the compact Turn is
-                # observable.  A Page-in accepted during that interval belongs
+                # observable.  Memory Loading accepted during that interval belongs
                 # to the next task continuation, not to the compaction request
                 # itself.  Binding it to the compact Turn would falsely claim
                 # that the coding model observed evidence which was only added
@@ -708,7 +708,7 @@ class CodexContextTransport:
                 if pending.delivery_kind == "PROVIDER_COMPACTION_REFRESH":
                     self.request_task_continuation(
                         "Continue the same task from the durable post-compaction "
-                        "Working Set refresh."
+                        "Working Memory refresh."
                     )
         return tuple(signals)
 
@@ -751,7 +751,7 @@ class CodexContextTransport:
 
     @property
     def unaccounted_provider_tokens(self) -> int:
-        """Accepted Page-In payload not represented by a later usage fact yet."""
+        """Accepted Memory Loading payload not represented by a later usage fact yet."""
 
         return self._unaccounted_provider_tokens
 

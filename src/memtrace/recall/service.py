@@ -59,7 +59,7 @@ class RecallOutcome:
 
 
 class RecallService:
-    """Formal V2 page-fault path: exact address -> minimal Page reads -> append block."""
+    """Formal V2 Trace Recall path: exact anchor -> bounded trace reads -> append block."""
 
     def __init__(
         self,
@@ -197,7 +197,7 @@ class RecallService:
                         ValueError,
                     ) as exc:
                         reasons.append(
-                            "Page body validation failed for "
+                            "Memory Trace validation failed for "
                             f"{candidate.page_id}: {type(exc).__name__}"
                         )
                         continue
@@ -315,12 +315,12 @@ class RecallService:
                     slice_tokens += support.page_slice.token_count
                 if graph_candidates:
                     reasons.append(
-                        "confirmed Semantic Page relations expanded the bounded candidate set"
+                        "confirmed Memory Trace relations expanded the bounded candidate set"
                     )
                     self.metrics.increment(CounterName.SEMANTIC_GRAPH_EXPANSION)
                 if rich_page_candidates:
                     reasons.append(
-                        "Rich Graph references translated to body-validated Semantic Page "
+                        "RSG references translated to body-validated Memory Trace "
                         "support without claiming Evidence coverage"
                     )
                 if supporting_candidates:
@@ -395,11 +395,11 @@ class RecallService:
             return RecallOutcome(block, trace)
 
     def _fault_direct(self, intent: RecallIntent) -> RecallOutcome:
-        """Dereference a MemoryRef as an address, never as a search seed."""
+        """Resolve a Memory Anchor as an address, never as a search seed."""
 
         candidate_method = getattr(self.semantic_index, "direct_page_candidates", None)
         if candidate_method is None:
-            raise TypeError("Semantic Page Table does not support direct Page addresses")
+            raise TypeError("Memory Index does not support direct trace addresses")
         candidates = candidate_method(
             intent,
             intent.direct_page_ids,
@@ -413,7 +413,7 @@ class RecallService:
         slices = []
         read_order: list[str] = []
         slice_levels: list[str] = []
-        reasons = ["runtime-owned MemoryRef dereferenced through the Semantic Page Table"]
+        reasons = ["runtime-owned Memory Anchor resolved through the Memory Index"]
         page_bytes_read = 0
         blob_bytes_read = 0
         slice_tokens = 0
@@ -460,7 +460,7 @@ class RecallService:
                 slices.append(page_slice)
                 slice_levels.append(scan.terminal_level)
                 slice_tokens += page_slice.token_count
-            # One MemoryRef fault opens the directory-selected section only.
+            # One Memory Anchor resolution opens the directory-selected section only.
             # A slice continuation addresses more bytes in that same section;
             # it is not permission to fan out across sibling Pages. Graph
             # traversal is entered only by an explicit semantic relation intent.
@@ -518,7 +518,7 @@ class RecallService:
                 slice_levels.append(support.terminal_level)
                 slice_tokens += support.page_slice.token_count
             if graph_pages_opened:
-                reasons.append("confirmed Semantic Page relations supplied bounded continuation")
+                reasons.append("confirmed Memory Trace relations supplied bounded continuation")
                 self.metrics.increment(CounterName.SEMANTIC_GRAPH_EXPANSION)
 
         address = intent.source_memory_ref or ",".join(intent.direct_page_ids)
@@ -527,7 +527,7 @@ class RecallService:
         if incomplete:
             reasons.append(
                 "addressed semantic section was only partially delivered; use its exact "
-                "continuation before treating the MemoryRef as complete"
+                "continuation before treating the Memory Anchor as complete"
             )
         coverage_state = (
             CoverageState.PARTIAL
@@ -645,7 +645,7 @@ class RecallService:
             )
         except Exception:
             # Exact Evidence/Anchor translation remains authoritative; Page
-            # flow context is a bounded continuity aid and never blocks Page-in.
+            # flow context is a bounded continuity aid and never blocks Memory Loading.
             return ()
         if not isinstance(value, tuple) or not all(isinstance(item, Mapping) for item in value):
             raise TypeError("page_graph_context returned invalid relationships")

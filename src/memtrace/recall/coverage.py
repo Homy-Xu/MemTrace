@@ -15,7 +15,7 @@ from ..contracts import (
 
 @dataclass(frozen=True, slots=True)
 class PageBodyEvidence:
-    """An exact fact obtained while inspecting a verified Page body.
+    """An exact fact obtained while inspecting a verified Memory Trace body.
 
     The retriever is the only production constructor.  The body proof binds the
     Page, Event, exact key, revision, branch and fact content; Manifest/FTS/Rich
@@ -92,7 +92,7 @@ class PageBodyEvidence:
 
 
 class CoverageTracker:
-    """Coverage over exact EvidenceKey digests, committed from Page bodies only."""
+    """Coverage over exact EvidenceKey digests, committed from validated traces only."""
 
     def __init__(self, required: Iterable[EvidenceKey]) -> None:
         ordered = tuple(required)

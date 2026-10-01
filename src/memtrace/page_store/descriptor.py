@@ -8,7 +8,7 @@ from ..contracts import Event, EventGroup, FactType, PageManifest, primitive
 
 @dataclass(frozen=True, slots=True)
 class PageSemanticDescriptor:
-    """Deterministic, bounded description of one immutable execution Page."""
+    """Deterministic, bounded description of one immutable Memory Trace."""
 
     page_id: str
     delta_kinds: tuple[str, ...]
@@ -60,7 +60,7 @@ def describe_page(
     manifest: PageManifest,
     groups: tuple[EventGroup, ...],
 ) -> PageSemanticDescriptor:
-    """Describe only facts already present in the sealed Page; never predict edges."""
+    """Describe only facts already present in the consolidated trace; never predict edges."""
 
     kinds: set[str] = set()
     changed_files: set[str] = set()

@@ -2,7 +2,7 @@
 
 This adapter never reads evaluator reports, hidden tests, future SRS files or
 reference patches. Submission tags are observations, NOT verification facts.
-The ordinary WAL, Page Store, TPG, revision tracking and recovery remain owners
+The ordinary trace ledger, Trace Store, MTG, revision tracking and recovery remain owners
 of execution state. No extra planning call or per-milestone database is used.
 """
 from __future__ import annotations

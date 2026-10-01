@@ -174,11 +174,11 @@ class DeliveryJournal:
         source_event_id: str,
         rendered_content: str,
     ) -> ProviderCompactionRefreshDelivery:
-        """Prepare one idempotent Working Set refresh after Provider compaction.
+        """Prepare one idempotent Working Memory refresh after Provider compaction.
 
-        This deliberately reuses the Context delivery journal: Page-In, Epoch
+        This deliberately reuses the Context delivery journal: Memory Loading, Epoch
         continuity and Provider-compaction recovery have the same transport
-        truth states even though only Page-In becomes semantic memory.
+        truth states even though only Memory Loading becomes semantic memory.
         """
 
         content = rendered_content.strip()
@@ -372,7 +372,7 @@ class DeliveryJournal:
 
         A stronger Provider fact (for example, an accepted same-Turn steer)
         proves the intermediate states as well. This helper is intentionally
-        used by control-plane recovery; ordinary Page-In keeps its stricter
+        used by control-plane recovery; ordinary Memory Loading keeps its stricter
         step-by-step lifecycle API.
         """
 

@@ -28,7 +28,7 @@ def code_graph_search_dynamic_tool() -> dict[str, Any]:
         "type": "function",
         "name": CODE_GRAPH_SEARCH_TOOL,
         "description": (
-            "Search the current-revision Rich Code Graph for navigation only. "
+            "Search the current-revision Repository State Graph for navigation only. "
             "Results are bounded hints, never evidence or a Milestone gate. "
             "If the graph is still building or unavailable, continue normal "
             "repository work instead of retrying the same query."
@@ -108,8 +108,8 @@ def _planned_step_schema(*, include_source_plan_items: bool) -> dict[str, Any]:
         "historical_dependency_refs": {
             **string_list,
             "description": (
-                "Natural entities whose already-paged detail is a hard dependency. "
-                "Never provide Page or MemoryRef IDs."
+                "Natural entities whose already-indexed detail is a hard dependency. "
+                "Never provide trace or Memory Anchor IDs."
             ),
         },
     }
@@ -130,7 +130,7 @@ def _planned_step_schema(*, include_source_plan_items: bool) -> dict[str, Any]:
 def preliminary_step_schema() -> dict[str, Any]:
     """Describe one lightweight executable cursor derived from the native Plan.
 
-    It tells the TPG what work is current and what risks should remain visible.
+    It tells the MTG what work is current and what risks should remain visible.
     Completion follows observed native-Plan progress or the Milestone boundary;
     Planning never invents selectors, Evidence IDs, or a Step Oracle.
     """
@@ -188,7 +188,7 @@ def preliminary_step_schema() -> dict[str, Any]:
                 **string_list,
                 "description": (
                     "Natural entities whose NONRESIDENT history is a declared dependency. "
-                    "Never provide Page or MemoryRef IDs."
+                    "Never provide trace or Memory Anchor IDs."
                 ),
             },
         },
@@ -196,7 +196,7 @@ def preliminary_step_schema() -> dict[str, Any]:
 
 
 def native_plan_projection_tool(output_schema: dict[str, Any]) -> dict[str, Any]:
-    """Project an observed native Harness Plan into the typed TPG route."""
+    """Project an observed native Harness Plan into the typed MTG route."""
 
     return {
         "type": "function",
@@ -431,12 +431,12 @@ def memory_dynamic_tools() -> tuple[dict[str, Any], ...]:
             "type": "function",
             "name": "recall_memory",
             "description": (
-                "Resolve a visible compressed MemoryRef before relying on it for a code, test, "
+                "Resolve a visible compressed Memory Anchor before relying on it for a code, test, "
                 "tool, or irreversible decision. Also use for a new historical semantic need. "
-                "State what is needed and why; never guess internal Page IDs. A returned section "
+                "State what is needed and why; never guess internal trace IDs. A returned section "
                 "directory may expose a model-safe section_handle, and an incomplete section may "
                 "expose a continuation_token. Copy those opaque values on a follow-up request "
-                "instead of rereading the repository or repeating the first Page prefix."
+                "instead of rereading the repository or repeating the first trace prefix."
             ),
             "inputSchema": {
                 "type": "object",
@@ -453,16 +453,16 @@ def memory_dynamic_tools() -> tuple[dict[str, Any], ...]:
                         "type": "string",
                         "pattern": "^memoryref_[a-f0-9]+$",
                         "description": (
-                            "Copy the opaque visible MemoryRef when dereferencing compressed "
-                            "history. The runtime translates it; never provide a Page ID."
+                            "Copy the opaque visible Memory Anchor when loading compressed "
+                            "history. The runtime resolves it; never provide an internal trace ID."
                         ),
                     },
                     "section_handle": {
                         "type": "string",
                         "pattern": "^section_[a-f0-9]+$",
                         "description": (
-                            "Optional opaque section address copied from a prior direct Page frame. "
-                            "It narrows the same MemoryRef; never invent it."
+                            "Optional opaque section address copied from a prior direct trace frame. "
+                            "It narrows the same Memory Anchor; never invent it."
                         ),
                     },
                     "continuation_token": {
@@ -486,7 +486,7 @@ def memory_dynamic_tools() -> tuple[dict[str, Any], ...]:
                         "type": "string",
                         "description": (
                             "Whether the semantic need is current code truth, execution history, "
-                            "a comparison, or detail behind a visible compressed MemoryRef."
+                            "a comparison, or detail behind a visible compressed Memory Anchor."
                         ),
                         "enum": [
                             "current_workspace_truth",

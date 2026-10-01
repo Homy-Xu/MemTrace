@@ -21,7 +21,7 @@ from .verification_coordinator import MilestoneVerificationBatch, VerificationCo
 
 
 class MultilangExecutionCoordinator(PythonExecutionCoordinator):
-    """Keep the Python five-stage engine while making route gaps advisory."""
+    """Keep the Python memory runtime while making route gaps advisory."""
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)

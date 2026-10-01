@@ -12,7 +12,7 @@ from ..database import StateDatabase
 class DynamicToolInvocation:
     """One synchronous App Server dynamic-tool request.
 
-    The model owns only the semantic arguments. Internal Page addresses remain
+    The model owns only the semantic arguments. Internal trace addresses remain
     behind the Harness boundary and are never copied into this request.
     """
 

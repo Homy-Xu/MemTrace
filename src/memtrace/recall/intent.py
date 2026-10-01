@@ -34,7 +34,7 @@ def normalize_intent(intent: RecallIntent) -> RecallIntent:
         intent.admission_limit,
     )
     if any(value <= 0 for value in budgets):
-        raise ValueError("RecallIntent Page and Token budgets must be positive")
+        raise ValueError("Trace Recall and token budgets must be positive")
     if not all(
         value.strip()
         for value in (
@@ -61,13 +61,13 @@ def normalize_intent(intent: RecallIntent) -> RecallIntent:
         SEMANTIC_PAGE_QUERY_RELATIONS
     )
     if unknown_page_relations:
-        raise ValueError(f"unknown Semantic Page relations: {sorted(unknown_page_relations)}")
+        raise ValueError(f"unknown Memory Trace relations: {sorted(unknown_page_relations)}")
     rich_code_relations = tuple(
         dict.fromkeys(item.strip().upper() for item in intent.rich_code_relations if item.strip())
     )
     unknown_rich_relations = set(rich_code_relations).difference(STRUCTURAL_RELATIONS)
     if unknown_rich_relations:
-        raise ValueError(f"unknown Rich Code Graph relations: {sorted(unknown_rich_relations)}")
+        raise ValueError(f"unknown Repository State Graph relations: {sorted(unknown_rich_relations)}")
     return replace(
         intent,
         required_evidence=required,

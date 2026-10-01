@@ -1,7 +1,8 @@
-"""Task-pressure-adaptive engagement of the five-stage control plane.
+"""Task-pressure-adaptive engagement of the state-consistent memory runtime.
 
-The five stages are always present (WAL, Pages, Semantic Memory, Recall,
-Context runtime); what varies is how deeply the runtime steers the model:
+The runtime always records traces, maintains Working Memory, performs Trace
+Recall, and preserves Context Recovery; what varies is how deeply it steers
+the model:
 
 * ``PASSTHROUGH`` - one Milestone for the whole Task, no per-Turn Route Card,
   no intermediate acceptance.  Terminal verification, Epoch fences and the
@@ -15,11 +16,11 @@ Context runtime); what varies is how deeply the runtime steers the model:
 The initial level is decided once, right after Planning, from signals that
 are available without touching the repository: native Plan item count,
 extracted requirement count, Task length and projected Milestone count.
-Milestone granularity is fixed by that decision.  During execution the level
+Execution Milestone granularity is fixed by that decision. During execution the level
 can only move up (PASSTHROUGH -> LIGHT -> FULL) in response to real pressure:
 the Provider context reaching URGENT/HARD, an Epoch replacement, or a
 Milestone acceptance failure.  Escalation changes runtime guidance (Route
-Card depth, Working Set retention), never the frozen Plan.
+Card depth, Working Memory retention), never the frozen Plan.
 """
 
 from __future__ import annotations

@@ -51,7 +51,7 @@ class MemoryNeed:
 
     @property
     def address_is_recallable(self) -> bool:
-        """Whether Page-in has at least one exact address and requires no guess."""
+        """Whether Memory Loading has an exact address and requires no guess."""
 
         return bool(self.required_evidence or self.direct_page_ids) and self.resolution_state in {
             "ACCEPTED",

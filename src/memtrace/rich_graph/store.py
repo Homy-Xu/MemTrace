@@ -28,7 +28,7 @@ _REVERSE_RELATIONS: dict[str, str] = {
 
 
 class RichGraphStore:
-    """Independent, revision-generation-scoped Rich Code Graph storage."""
+    """Independent, revision-generation-scoped RSG storage."""
 
     SCHEMA_VERSION = 1
 

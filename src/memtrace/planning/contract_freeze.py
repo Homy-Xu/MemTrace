@@ -12,7 +12,7 @@ Address resolution follows a fixed priority chain and records its provenance:
 1. addresses the model already declared on the direction;
 2. addresses learned from accepted predecessor evidence and the current
    Milestone-scoped repository changes;
-3. structural candidates supplied by the Rich Code Graph (hint only);
+3. structural candidates supplied by the Repository State Graph (hint only);
 4. addresses attached to the immutable Task requirement checklist.
 
 A requirement that still has no address keeps its executable mode: it binds to

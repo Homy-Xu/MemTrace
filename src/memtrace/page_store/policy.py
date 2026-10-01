@@ -15,7 +15,7 @@ class TailReason(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class PagePolicy:
-    """Token policy for semantic pages.
+    """Token policy for bounded Memory Trace bodies.
 
     Token counts are estimates over canonical, already-redacted EventGroups.
     Boundaries are evaluated only after a whole EventGroup has committed.

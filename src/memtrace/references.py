@@ -201,8 +201,8 @@ class ReferenceDirectory:
     """Shared Semantic/Rich address directory, separate from Page bodies.
 
     The directory does not decide factual truth and does not scan a repository.
-    It records only files already present in the execution frontier. Page Store
-    remains the authoritative source for historical detail.
+    It records only files already present in the execution frontier. The Trace
+    Store remains the authoritative source for historical detail.
     """
 
     def __init__(

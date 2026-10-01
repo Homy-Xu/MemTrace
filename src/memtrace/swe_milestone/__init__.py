@@ -1,8 +1,8 @@
-"""SWE-Milestone host-managed regression guard for the five-stage runtime.
+"""SWE-Milestone host-managed regression guard for the memory runtime.
 
 The official SWE-Milestone protocol scores a submission only after the agent
 tags ``agent-impl-<milestone>``; the agent receives no feedback.  This package
-gives the five-stage acceptance kernel the same kind of runtime-owned
+gives the acceptance kernel the same kind of runtime-owned
 ``trusted_verifier`` that SWE-EVO already has: it derives the affected scope
 from the repository diff since the previous submission, runs the project's own
 test runner for that scope offline, calibrates failures against the baseline

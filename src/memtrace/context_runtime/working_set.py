@@ -24,7 +24,7 @@ class WorkingSetEntry:
 
 
 class WorkingSetTracker:
-    """Persisted hot/cooling frontier; Page Store, not this cache, retains history."""
+    """Persisted hot/cooling frontier; Trace Store, not this cache, retains history."""
 
     _TTL = {
         "CURRENT_MILESTONE": 3,
@@ -63,10 +63,10 @@ class WorkingSetTracker:
             );
             CREATE TRIGGER IF NOT EXISTS v2_working_set_events_no_update
             BEFORE UPDATE ON v2_working_set_events
-            BEGIN SELECT RAISE(ABORT, 'Working Set events are append-only'); END;
+            BEGIN SELECT RAISE(ABORT, 'Working Memory events are append-only'); END;
             CREATE TRIGGER IF NOT EXISTS v2_working_set_events_no_delete
             BEFORE DELETE ON v2_working_set_events
-            BEGIN SELECT RAISE(ABORT, 'Working Set events are append-only'); END;
+            BEGIN SELECT RAISE(ABORT, 'Working Memory events are append-only'); END;
             """
         )
 

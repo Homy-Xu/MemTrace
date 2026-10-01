@@ -81,7 +81,7 @@ class CodexBackend(EventQueueMixin):
         callbacks, so a production caller passes either ``driver`` or the
         driver's required ``revision_tracker``.  Requiring that context here
         is intentional: silently starting a second Codex runner would break
-        the five-stage WAL and make a benchmark receipt incomparable.
+        the durable trace ledger and make a benchmark receipt incomparable.
         """
 
         if self._session is None:

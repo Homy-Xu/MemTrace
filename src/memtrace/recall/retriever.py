@@ -61,7 +61,7 @@ class _PositionedGroup:
 
 
 class PageSliceRetriever:
-    """Open one immutable Page, then expand its logical slice from L0 to L4."""
+    """Open one immutable Memory Trace, then expand its bounded slice from L0 to L4."""
 
     _LEVELS = ("L0", "L1", "L2", "L3", "L4")
 
@@ -187,7 +187,7 @@ class PageSliceRetriever:
         max_blob_bytes_read: int | None = None,
         max_slice_tokens: int | None = None,
     ) -> PageScanResult:
-        """Open a Page selected by a runtime-owned MemoryRef address."""
+        """Open a Memory Trace selected by a runtime-owned Memory Anchor."""
 
         return self._retrieve_context_page(
             candidate=candidate,
@@ -208,21 +208,21 @@ class PageSliceRetriever:
         max_blob_bytes_read: int | None,
         max_slice_tokens: int | None,
     ) -> PageScanResult:
-        """Validate and slice an already-addressed Page without Evidence search."""
+        """Validate and slice an already-addressed trace without Evidence search."""
 
         groups = self.page_reader.open_page(candidate.page_id)
         page_bytes = len(canonical_bytes({"groups": primitive(groups)}))
         if max_page_bytes_read is not None and page_bytes > max_page_bytes_read:
             raise RecallBudgetExceeded("Page read budget exhausted")
         if digest({"groups": primitive(groups)}) != candidate.payload_digest:
-            raise ValueError("Semantic graph candidate/Page body digest mismatch")
+            raise ValueError("Memory Index candidate/trace body digest mismatch")
         if any(
             group.run_id != intent.run_id
             or group.branch_id != candidate.branch_id
             or (intent.require_exact_revision and group.revision_id != intent.revision_id)
             for group in groups
         ):
-            raise ValueError("Semantic graph candidate/Page body scope mismatch")
+            raise ValueError("Memory Index candidate/trace body scope mismatch")
         self._blob_cache.clear()
         self._truncated_blobs.clear()
         self._blob_bytes_read = 0
@@ -395,9 +395,9 @@ class PageSliceRetriever:
         *,
         target_entities: set[str],
     ) -> tuple[_PositionedGroup, ...]:
-        """Rank only sections inside an already-addressed immutable Page.
+        """Rank only sections inside an already-addressed immutable Memory Trace.
 
-        This is local address translation, not Page discovery.  Exact entity
+        This is local Memory Resolution, not trace discovery. Exact entity
         overlap dominates bounded semantic hints; recency breaks ties because a
         later observation at the same revision normally contains the refined
         investigation state.
@@ -429,9 +429,9 @@ class PageSliceRetriever:
         target_entity_groups: Sequence[frozenset[str]],
         limit: int = 2,
     ) -> tuple[_PositionedGroup, ...]:
-        """Choose a minimal, entity-diverse working set inside one addressed Page.
+        """Choose a minimal, entity-diverse selection inside one addressed trace.
 
-        MemoryRef already resolved the Page.  The first fault returns at most two
+        The Memory Anchor already resolved the trace. The first load returns at most two
         independently addressable EventGroup sections so a multi-entity need is
         useful without merging or truncating unrelated groups.  The model can
         then request an exact directory section or continuation token; the
@@ -574,11 +574,11 @@ class PageSliceRetriever:
 
     @staticmethod
     def _address_aliases(entity: str) -> frozenset[str]:
-        """Return deterministic spellings used to select an addressed Page section.
+        """Return deterministic spellings used to select an addressed trace section.
 
-        A MemoryRef already identifies the immutable Page.  This translation
-        therefore narrows only within that Page; it never discovers or ranks a
-        different Page.  Repository-relative file spellings and a symbol's
+        A Memory Anchor already identifies the immutable trace. This translation
+        therefore narrows only within that trace; it never discovers or ranks a
+        different trace. Repository-relative file spellings and a symbol's
         containing-file address are equivalent section selectors.  No suffix
         or semantic similarity guessing is performed.
         """
@@ -628,12 +628,12 @@ class PageSliceRetriever:
         anchors: Sequence[SemanticAnchor],
     ) -> PageScanResult:
         if digest({"groups": primitive(groups)}) != candidate.payload_digest:
-            raise ValueError("Semantic candidate/Page body digest mismatch")
+            raise ValueError("Trace candidate/body digest mismatch")
         if any(
             group.run_id != intent.run_id or group.branch_id != candidate.branch_id
             for group in groups
         ):
-            raise ValueError("Semantic candidate/Page body scope mismatch")
+            raise ValueError("Trace candidate/body scope mismatch")
         page_hits = tuple(
             hit
             for hit in hits

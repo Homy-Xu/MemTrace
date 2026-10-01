@@ -147,8 +147,8 @@ def _record_unavailable_attempt(method):
 class SweMilestoneVerifier:
     """Affected-scope regression verification for one SWE-Milestone project.
 
-    The instance is the ``trusted_verifier`` callable handed to the five-stage
-    ``RunCoordinator``.  A call verifies the current working tree against the
+    The instance is the ``trusted_verifier`` callable handed to the memory
+    runtime's ``RunCoordinator``. A call verifies the current working tree against the
     previous official submission (or the run baseline) and returns the
     immutable receipt mapping the acceptance kernel understands.  The optional
     :meth:`bind_submission` pins the next call to an already-created

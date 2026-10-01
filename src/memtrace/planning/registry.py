@@ -1413,7 +1413,7 @@ class PlanRegistry:
         source_event_id: str,
         current_milestone_id: str | None = None,
     ) -> PlanApplication:
-        """Validate first, then atomically seed Registry and Semantic Graph."""
+        """Validate first, then atomically seed the registry and MTG route."""
 
         checked = self._coerce_plan(plan)
         if not all(
@@ -3021,7 +3021,7 @@ class PlanRegistry:
 
         Ordinary finite Tasks keep the historical terminal behavior.  A
         repository stream may instead end only the current invocation while
-        preserving the same Task, Page Store and TPG for a later official
+        preserving the same Task, Trace Store and MTG for a later official
         release or a fresh physical budget.
         """
 
@@ -3671,7 +3671,7 @@ class PlanRegistry:
 
         The span starts at the first state event after the previous terminal
         acceptance state (so a repair after ``VERIFICATION_FAILED`` opens a new
-        window) and ends at the latest state event.  PageSet boundaries are
+        window) and ends at the latest state event. Memory Episode boundaries are
         taken from these cursors, never from byte sizes.
         """
 
@@ -5452,9 +5452,9 @@ class PlanRegistry:
         *,
         conn: sqlite3.Connection | None = None,
     ) -> dict[str, object] | None:
-        """Return the one local working pointer beneath the current Milestone.
+        """Return the one local working pointer beneath the current Execution Milestone.
 
-        The Registry remains authoritative. The Semantic Graph mirrors this
+        The Registry remains authoritative. The MTG mirrors this
         pointer for route inspection; it never chooses a Step on its own.
         """
 
