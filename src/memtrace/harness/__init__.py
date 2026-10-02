@@ -14,6 +14,7 @@ from .context_transport import (
 from .contracts import HarnessCapabilities, HarnessEvent, HarnessEventType
 from .driver import CodexHarnessDriver
 from .dynamic_tools import DynamicToolInvocation, DynamicToolResult
+from .environment import EnvironmentFileError, apply_environment_files, read_environment_file
 from .events import CodexEventMapper, RawHarnessEventLedger
 from .normalizer import CodexPlanNormalizer, MilestoneManifestRequired
 from .provider import CodexRuntimeLaunch, build_runtime_launch, resolve_codex_executable
@@ -43,6 +44,9 @@ __all__ = [
     "CodexHarnessDriver",
     "DynamicToolInvocation",
     "DynamicToolResult",
+    "EnvironmentFileError",
+    "read_environment_file",
+    "apply_environment_files",
     "CodexContextTransport",
     "CodexEventMapper",
     "RawHarnessEventLedger",

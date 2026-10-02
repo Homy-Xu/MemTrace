@@ -120,6 +120,27 @@ memtrace run \
   --run-root /tmp/memtrace-codex-deepseek
 ```
 
+For the long-horizon Codex contract used by the earlier DeepSWE,
+SWE-Milestone, and SWE-EVO runs, use the pinned 200k-context profile and
+private environment files:
+
+```bash
+memtrace run \
+  --harness codex \
+  --config configs/codex/memtensor-deepseek-v4-flash.json \
+  --env-file /protected/provider.env \
+  --env-file /protected/proxy.env \
+  --provider-api-key-env MEMTENSOR_API_KEY \
+  --model deepseek-v4-flash \
+  --reasoning-effort high \
+  --repository /path/to/repository \
+  --task-file task.txt \
+  --run-root /tmp/memtrace-codex-long-horizon
+```
+
+The profile details and its benchmark boundary are documented in
+[docs/codex-benchmark-profile.md](docs/codex-benchmark-profile.md).
+
 ### mini-swe-agent 2.4.6
 
 ```bash
