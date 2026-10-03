@@ -99,6 +99,70 @@ class ContextWindowGuard:
             provider_count = 0
         return max(conservative, provider_count)
 
+    @staticmethod
+    def _context_synopsis(dropped: Sequence[Mapping[str, Any]]) -> Mapping[str, Any]:
+        """Return a small, provider-neutral summary of discarded history.
+
+        A long coding task can exceed the input budget while the agent is still
+        exploring the repository.  Keeping only the newest tool pair is safe
+        for the API contract, but it makes the model forget which files it has
+        already inspected and restart from ``ls``/``find`` after every trim.
+        The synopsis preserves command intent and result status without copying
+        source code, prompts, credentials, or full tool output.
+        """
+
+        commands: list[str] = []
+        results: list[str] = []
+        seen_commands: set[str] = set()
+        for message in dropped:
+            role = message.get("role")
+            if role == "assistant":
+                for call in message.get("tool_calls", []) or []:
+                    function = call.get("function", {}) if isinstance(call, Mapping) else {}
+                    arguments = function.get("arguments", "") if isinstance(function, Mapping) else ""
+                    command = ""
+                    if isinstance(arguments, str):
+                        try:
+                            parsed = json.loads(arguments)
+                        except json.JSONDecodeError:
+                            parsed = {}
+                        if isinstance(parsed, Mapping):
+                            command = str(parsed.get("command", "")).strip()
+                    if command:
+                        # Keep the shell verb and path context, but cap each
+                        # item so a huge generated command cannot consume the
+                        # entire synopsis budget.
+                        compact = " ".join(command.split())[:240]
+                        if compact not in seen_commands:
+                            seen_commands.add(compact)
+                            commands.append(compact)
+            elif role == "tool":
+                extra = message.get("extra", {})
+                returncode = extra.get("returncode") if isinstance(extra, Mapping) else None
+                content = str(message.get("content", ""))
+                first_line = " ".join(content.splitlines()[:1]).strip()[:180]
+                if returncode is not None or first_line:
+                    status = f"rc={returncode}" if returncode is not None else "rc=?"
+                    results.append(f"{status} {first_line}".strip())
+
+        # The most recent discarded commands are generally the useful ones;
+        # retain a bounded prefix as well so the synopsis remains stable while
+        # the history grows.
+        commands = commands[-32:]
+        results = results[-16:]
+        lines = [
+            "The context guard compacted earlier agent history.",
+            "Continue from this synopsis and do not repeat repository exploration unless it is needed:",
+            f"Previously issued bash commands ({len(commands)} retained):",
+        ]
+        lines.extend(f"- {command}" for command in commands)
+        lines.append("Recent tool result summaries:")
+        lines.extend(f"- {result}" for result in results)
+        return {
+            "role": "user",
+            "content": "\n".join(lines),
+        }
+
     def _prepare(self, messages: Sequence[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
         original = list(messages)
         total = self._estimate_tokens(original)
@@ -149,7 +213,20 @@ class ContextWindowGuard:
             ):
                 tail.pop(0)
 
-        kept = prefix + tail
+        dropped = original[2:start]
+        synopsis = self._context_synopsis(dropped) if dropped else None
+        context_prefix = prefix + ([synopsis] if synopsis else [])
+        while tail and self._estimate_tokens(context_prefix + tail) > limit:
+            removed = tail.pop(0)
+            if (
+                removed.get("role") == "assistant"
+                and removed.get("tool_calls")
+                and tail
+                and tail[0].get("role") == "tool"
+            ):
+                tail.pop(0)
+
+        kept = context_prefix + tail
         estimate = self._estimate_tokens(kept)
         self.last_stats = {
             "input_messages": len(original),
@@ -158,6 +235,12 @@ class ContextWindowGuard:
             "input_limit_tokens": limit,
             "trimmed": True,
             "dropped_messages": max(0, len(original) - len(kept)),
+            "synopsis_included": synopsis is not None,
+            "synopsis_commands": len(
+                [line for line in str(synopsis.get("content", "")).splitlines() if line.startswith("- ")]
+            )
+            if synopsis
+            else 0,
         }
         return kept
 

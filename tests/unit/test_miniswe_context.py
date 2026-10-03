@@ -45,6 +45,50 @@ def test_context_guard_preserves_task_prefix_and_recent_tool_pair() -> None:
     assert kept[:2] == messages[:2]
     assert kept[-2:] == messages[-2:]
     assert result["extra"]["context_guard"]["kept_messages"] < len(messages)
+    assert result["extra"]["context_guard"]["synopsis_included"] is True
+
+
+def test_context_guard_includes_bounded_history_synopsis() -> None:
+    delegate = _Model()
+    guard = ContextWindowGuard(
+        delegate,
+        model_name="test/model",
+        budget=ContextBudget(
+            model_limit=20_000,
+            system_overhead=1_000,
+            tool_schema_tokens=1_000,
+            output_reserve=1_000,
+            safety_margin=1_000,
+        ),
+    )
+    messages = [
+        {"role": "system", "content": "system"},
+        {"role": "user", "content": "task"},
+        {
+            "role": "assistant",
+            "content": None,
+            "tool_calls": [
+                {
+                    "function": {
+                        "name": "bash",
+                        "arguments": '{"command":"cat config.go"}',
+                    }
+                }
+            ],
+        },
+        {"role": "tool", "content": "config source", "extra": {"returncode": 0}},
+        *({"role": "user", "content": "old " + ("x" * 5_000)} for _ in range(8)),
+        {"role": "assistant", "tool_calls": [{"id": "call-last"}], "content": ""},
+        {"role": "tool", "tool_call_id": "call-last", "content": "latest output"},
+    ]
+    result = guard.query(messages)
+    synopsis = next(
+        message
+        for message in delegate.messages
+        if message.get("content", "").startswith("The context guard compacted")
+    )
+    assert "cat config.go" in synopsis["content"]
+    assert result["extra"]["context_guard"]["synopsis_commands"] >= 1
 
 
 def test_progress_guard_stops_after_configured_repeated_cycles() -> None:
