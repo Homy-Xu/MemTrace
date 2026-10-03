@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import time
 from collections import deque
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
-from typing import Any, Deque, Iterable, Mapping, Protocol
+from typing import Any, Protocol
 
 from .contracts import HarnessCapabilities, HarnessEvent
 
@@ -28,7 +29,10 @@ class UsageSnapshot:
     output_tokens: int | None = None
     total_tokens: int | None = None
     cost: float | None = None
+    cost_available: bool | None = None
+    cost_source: str | None = None
     wall_time_seconds: float | None = None
+    context: Mapping[str, Any] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -37,7 +41,10 @@ class UsageSnapshot:
             "output_tokens": self.output_tokens,
             "total_tokens": self.total_tokens,
             "cost": self.cost,
+            "cost_available": self.cost_available,
+            "cost_source": self.cost_source,
             "wall_time_seconds": self.wall_time_seconds,
+            "context": dict(self.context) if self.context is not None else None,
         }
 
 
@@ -84,7 +91,7 @@ class EventQueueMixin:
     """Small append-only event queue shared by backend wrappers."""
 
     def _init_event_queue(self) -> None:
-        self._event_queue: Deque[HarnessEvent] = deque()
+        self._event_queue: deque[HarnessEvent] = deque()
 
     def _queue_event(self, event: HarnessEvent) -> HarnessEvent:
         self._event_queue.append(event)

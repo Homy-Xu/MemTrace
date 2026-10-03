@@ -1,0 +1,44 @@
+# Public reference configuration.  Keep the credential in a protected
+# environment; mini-swe-agent reads it through LiteLLM's standard variables.
+model:
+  model_class: litellm
+  model_name: ${MEMTRACE_MINISWE_MODEL:-deepseek-v4-flash}
+  model_kwargs:
+    api_base: ${MEMTRACE_MINISWE_BASE_URL:-https://api-int.memtensor.cn/v1}
+    api_key: ${MEMTENSOR_API_KEY}
+    drop_params: true
+
+context_budget:
+  model_limit: 200000
+  system_overhead: 8000
+  tool_schema_tokens: 16000
+  output_reserve: 16000
+  safety_margin: 8000
+
+progress:
+  no_progress_limit: 2
+
+environment:
+  environment_class: local
+
+agent:
+  agent_class: default
+  # Zero means that no numeric step budget is imposed by MemTrace.  The
+  # launcher still supplies the wall-clock limit below.
+  step_limit: 0
+  cost_limit: 0
+  wall_time_limit_seconds: 28800
+  max_consecutive_format_errors: 3
+  system_template: |
+    You are an autonomous software engineer working in the supplied repository.
+    Use the bash tool for every repository inspection, edit, and test command.
+    Work until the requested change is complete and verified. Do not merely
+    describe a patch. When the work is complete, run the benchmark's required
+    completion command exactly as provided by the task runner.
+  instance_template: |
+    Solve the following issue in the repository:
+
+    {{task}}
+
+    Inspect the existing implementation first, make the smallest correct
+    change, run focused tests, and leave the working tree ready for evaluation.

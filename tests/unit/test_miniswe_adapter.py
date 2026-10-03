@@ -33,6 +33,7 @@ def test_miniswe_adapter_normalizes_synthetic_trajectory(tmp_path: Path, monkeyp
     environments = types.ModuleType("minisweagent.environments")
     environments.get_environment = lambda config, default_type="": object()
     package = types.ModuleType("minisweagent")
+    package.__version__ = "2.4.6"
     monkeypatch.setitem(sys.modules, "minisweagent", package)
     monkeypatch.setitem(sys.modules, "minisweagent.agents", agents)
     monkeypatch.setitem(sys.modules, "minisweagent.models", models)
@@ -44,6 +45,7 @@ def test_miniswe_adapter_normalizes_synthetic_trajectory(tmp_path: Path, monkeyp
         run_root=tmp_path / "run",
     )
     backend.start_session(run_id="r", branch_id="main")
+    assert backend.capabilities().context_limit == 200_000
     events = tuple(backend.execute("make the requested change"))
     assert [event.event_type for event in events] == [
         HarnessEventType.THREAD_STARTED,
@@ -54,3 +56,4 @@ def test_miniswe_adapter_normalizes_synthetic_trajectory(tmp_path: Path, monkeyp
     ]
     assert backend.usage().api_calls == 2
     assert backend.usage().cost == 0.12
+    assert backend.usage().cost_available is True
