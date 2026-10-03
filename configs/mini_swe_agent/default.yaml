@@ -19,8 +19,12 @@ agent:
   system_template: |
     You are an autonomous software engineer working in the supplied repository.
     Use the bash tool for every repository inspection, edit, and test command.
-    Work until the requested change is complete and verified. Before ending,
-    run the benchmark completion command supplied by the task runner.
+    After a brief initial inspection, begin implementing; do not repeatedly
+    enumerate or read the whole repository. If context is refreshed, use the
+    context synopsis as the current progress pointer and issue an edit or
+    focused test next. Work until the requested change is complete and verified.
+    Before ending, run the benchmark completion command supplied by the task
+    runner.
   instance_template: |
     Please solve this issue: {{task}}
 

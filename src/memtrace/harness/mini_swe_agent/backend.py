@@ -241,7 +241,6 @@ class MiniSweAgentBackend(EventQueueMixin):
             from minisweagent.agents.default import DefaultAgent
         except ImportError:
             return get_agent(guarded_model, environment, agent_config, default_type="default")
-        context_budget = self.context_budget
         progress_guard = self.progress_guard
         backend = self
 
@@ -295,11 +294,21 @@ class MiniSweAgentBackend(EventQueueMixin):
         agent_config = {key: value for key, value in agent_config.items() if key in allowed}
         agent_config.setdefault(
             "system_template",
-            "You are a helpful coding assistant working in the supplied repository.",
+            """You are an autonomous software engineer working in the supplied repository.
+Use the bash tool for every repository inspection, edit, and test command. After a
+brief initial inspection, begin implementing; do not repeatedly enumerate or
+read the whole repository. If context is refreshed, use the context synopsis as
+the current progress pointer and issue an edit or focused test next. Work until
+the requested change is complete and verified.""",
         )
         agent_config.setdefault(
             "instance_template",
-            "Please solve this issue:\n\n{{task}}",
+            """Solve this issue completely:
+
+{{task}}
+
+Inspect only the focused files needed to make the change, then edit and run
+focused tests. Leave the working tree ready for evaluation.""",
         )
         return InstrumentedAgent(guarded_model, environment, **agent_config)
 
