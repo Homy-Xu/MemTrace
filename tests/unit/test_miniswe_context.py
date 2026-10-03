@@ -43,7 +43,9 @@ def test_context_guard_preserves_task_prefix_and_recent_tool_pair() -> None:
     kept = delegate.messages
     assert result["extra"]["context_guard"]["trimmed"] is True
     assert kept[:2] == messages[:2]
-    assert kept[-2:] == messages[-2:]
+    assert messages[-2] in kept
+    assert messages[-1] in kept
+    assert kept[-1]["content"].startswith("The context guard compacted")
     assert result["extra"]["context_guard"]["kept_messages"] < len(messages)
     assert result["extra"]["context_guard"]["synopsis_included"] is True
 

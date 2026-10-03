@@ -215,8 +215,10 @@ class ContextWindowGuard:
 
         dropped = original[2:start]
         synopsis = self._context_synopsis(dropped) if dropped else None
-        context_prefix = prefix + ([synopsis] if synopsis else [])
-        while tail and self._estimate_tokens(context_prefix + tail) > limit:
+        context_prefix = prefix
+        while tail and self._estimate_tokens(
+            context_prefix + tail + ([synopsis] if synopsis else [])
+        ) > limit:
             removed = tail.pop(0)
             if (
                 removed.get("role") == "assistant"
@@ -226,7 +228,11 @@ class ContextWindowGuard:
             ):
                 tail.pop(0)
 
-        kept = context_prefix + tail
+        # Put the synopsis after the recent tool pair so it is the most recent
+        # user context seen by the provider.  This keeps the tool-call/result
+        # pair intact while preventing a trimmed agent from restarting its
+        # repository survey on the next request.
+        kept = context_prefix + tail + ([synopsis] if synopsis else [])
         estimate = self._estimate_tokens(kept)
         self.last_stats = {
             "input_messages": len(original),
