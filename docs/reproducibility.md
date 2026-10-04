@@ -12,7 +12,10 @@ combination:
 | mini-swe-agent 2.4.6 | smoke | smoke | smoke |
 
 Each smoke uses a new run root, repository checkout, container identity,
-provider session, and receipt path. A smoke is complete only when generation,
+provider session, and receipt path. The DeepSWE mini-swe-agent reference run
+uses version 2.4.6 through the five-stage runtime: `deepseek-v4-flash-0731`,
+a 200,000-token context window, native compaction disabled, 200 execution
+turns, and a 14,400-second wall-clock budget. A smoke is complete only when generation,
 official evaluation, score publication, usage accounting, and cleanup all have
 receipts. A launcher, provider, container, evaluator, or network failure is
 recorded as `INFRA_OR_AGENT_FAILURE` and is never converted into a model score.

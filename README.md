@@ -122,24 +122,26 @@ memtrace run \
 
 ### mini-swe-agent 2.4.6
 
-```bash
-export DEEPSEEK_API_KEY='set-this-locally'
-export MEMTRACE_MINISWE_MODEL='deepseek/deepseek-flash'
+DeepSWE uses the five-stage runtime. The command below plans once, then runs
+trace persistence, semantic memory, recall, context replacement, and the
+repository graph through mini-swe-agent 2.4.6:
 
-python -m memtrace.benchmarks.mini \
-  --model "$MEMTRACE_MINISWE_MODEL" \
+```bash
+export MEMTENSOR_DOMESTIC_API_KEY='set-this-locally'
+
+memtrace run \
+  --harness mini_swe_agent \
+  --config configs/mini_swe_agent/memtensor-deepseek-v4-flash-0731-five-stage.json \
+  --model deepseek-v4-flash-0731 \
+  --reasoning-effort high \
   --repository /path/to/repository \
   --task-file task.txt \
-  --config configs/mini_swe_agent/default.yaml \
-  --run-root /tmp/memtrace-mini-run \
-  --benchmark smoke \
-  --task-id local
+  --run-root /tmp/memtrace-mini-run
 ```
 
-DeepSeek currently documents `deepseek-flash` as the model identifier. The
-legacy `deepseek-v4-flash` name remains accepted as an alias; use
-`deepseek/deepseek-v4-flash` only when a deployment specifically requires that
-legacy spelling.
+The profile fixes the model context at 200,000 tokens, disables native
+compaction, and bounds the run at 200 execution turns and 14,400 seconds.
+See [docs/deepswe-reproduction.md](docs/deepswe-reproduction.md).
 
 The benchmark launchers accept only the shared Harness lifecycle. They do not
 silently substitute a standalone runner or reuse another task's workspace,
@@ -201,7 +203,8 @@ src/memtrace/
 ├── context_runtime/      Working Memory, compaction, checkpoints
 ├── rich_graph/           optional Repository State Graph indexing
 ├── harness/codex/        Codex App Server backend
-├── harness/mini_swe_agent/  mini-swe-agent 2.4.6 backend
+├── harness/mini_five_stage.py  DeepSWE five-stage mini-swe-agent adapter
+├── harness/mini_swe_agent/  mini-swe-agent 2.4.6 receipt adapter
 └── benchmarks/           shared runner and benchmark bridges
 ```
 

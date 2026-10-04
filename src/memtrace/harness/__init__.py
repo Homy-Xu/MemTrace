@@ -3,6 +3,7 @@
 from .adapter import CodexHarnessAdapter, CodexPlanningResult
 from .base import HarnessBackend, HarnessCheckpoint, HarnessSession, UsageSnapshot
 from .codex import CodexBackend
+from .mini_five_stage import MiniSweAgentHarnessAdapter, MiniSweAgentHarnessDriver
 from .mini_swe_agent import MINISWE_VERSION, MiniSweAgentBackend
 from .context_transport import (
     CodexContextTransport,
@@ -62,6 +63,8 @@ __all__ = [
     "HarnessSession",
     "UsageSnapshot",
     "MiniSweAgentBackend",
+    "MiniSweAgentHarnessAdapter",
+    "MiniSweAgentHarnessDriver",
     "MINISWE_VERSION",
     "NativeCompactionRequestState",
     "TurnFenceRequest",

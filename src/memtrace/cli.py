@@ -24,7 +24,10 @@ def _parser() -> argparse.ArgumentParser:
         description="State-consistent long-running coding runtime V2",
     )
     subcommands = parser.add_subparsers(dest="command", required=True)
-    run = subcommands.add_parser("run", help="run with Codex App Server or an offline scenario")
+    run = subcommands.add_parser(
+        "run",
+        help="run with Codex App Server, mini-swe-agent five-stage, or an offline scenario",
+    )
     run.add_argument("--scenario", type=Path)
     task_source = run.add_mutually_exclusive_group()
     task_source.add_argument("--task")
@@ -33,7 +36,7 @@ def _parser() -> argparse.ArgumentParser:
         type=Path,
         help="read the exact UTF-8 Task from a file (useful for benchmark harnesses)",
     )
-    run.add_argument("--harness", choices=("codex", "scenario"))
+    run.add_argument("--harness", choices=("codex", "mini_swe_agent", "scenario"))
     run.add_argument("--repository-stream", type=Path,
                      help="SWE-Milestone repository-session contract; keep trace state and MTG relations across releases")
     run.add_argument(
@@ -310,9 +313,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                 if args.command == "benchmark"
                 else (args.harness or ("scenario" if args.scenario else None))
             )
-            if harness not in {"scenario", "codex"}:
-                raise ValueError("run requires --harness codex or --scenario")
-            label = args.scenario.stem if args.scenario else "codex"
+            if harness not in {"scenario", "codex", "mini_swe_agent"}:
+                raise ValueError(
+                    "run requires --harness codex, --harness mini_swe_agent, or --scenario"
+                )
+            label = args.scenario.stem if args.scenario else harness
             run_root = (
                 args.run_root.expanduser().resolve()
                 if args.run_root
@@ -333,7 +338,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 )
             else:
                 if args.scenario is not None:
-                    raise ValueError("--scenario cannot be combined with --harness codex")
+                    raise ValueError("--scenario cannot be combined with a live Harness")
                 user_task = args.task
                 if args.task_file is not None:
                     try:
@@ -356,8 +361,22 @@ def main(argv: Sequence[str] | None = None) -> int:
                 selected_model = args.model or config.provider.model
                 if not user_task or not user_task.strip() or not selected_model:
                     raise ValueError(
-                        "Codex harness requires --task/--task-file and a model from "
+                        "live Harness requires --task/--task-file and a model from "
                         "--model or provider.model"
+                    )
+                if harness == "mini_swe_agent" and args.codex_bin:
+                    raise ValueError("--codex-bin is incompatible with mini-swe-agent")
+                if harness == "mini_swe_agent" and args.resume_thread_id:
+                    raise ValueError("mini-swe-agent does not support --resume-thread-id")
+                if harness == "mini_swe_agent" and args.multilang_plan:
+                    raise ValueError("--multilang-plan is only available with the Codex Harness")
+                if harness == "mini_swe_agent" and args.swe_milestone_verifier is not None:
+                    raise ValueError(
+                        "--swe-milestone-verifier is only available with the Codex Harness"
+                    )
+                if harness == "mini_swe_agent" and args.repository_stream is not None:
+                    raise ValueError(
+                        "--repository-stream is only available with the Codex Harness"
                     )
                 normalizer_options = {}
                 if args.swe_milestone_verifier is not None and args.multilang_plan:
@@ -402,16 +421,27 @@ def main(argv: Sequence[str] | None = None) -> int:
                     # Expose the same optional navigation tool to Python too;
                     # retain Python AST/ReferenceDirectory and normalizer.
                     adapter_class = SweMilestoneCodexHarnessAdapter
-                harness_adapter = adapter_class(
-                    repository_path=repository,
-                    model=selected_model,
-                    run_root=run_root,
-                    provider=config.provider,
-                    executable=args.codex_bin,
-                    reasoning_effort=args.reasoning_effort,
-                    sandbox_mode=config.codex_sandbox_mode,
-                    **normalizer_options,
-                )
+                if harness == "mini_swe_agent":
+                    from .harness.mini_five_stage import MiniSweAgentHarnessAdapter
+
+                    harness_adapter = MiniSweAgentHarnessAdapter(
+                        repository_path=repository,
+                        model=selected_model,
+                        run_root=run_root,
+                        provider=config.provider,
+                        reasoning_effort=args.reasoning_effort or "high",
+                    )
+                else:
+                    harness_adapter = adapter_class(
+                        repository_path=repository,
+                        model=selected_model,
+                        run_root=run_root,
+                        provider=config.provider,
+                        executable=args.codex_bin,
+                        reasoning_effort=args.reasoning_effort,
+                        sandbox_mode=config.codex_sandbox_mode,
+                        **normalizer_options,
+                    )
                 repository_id = stable_id("repo_", str(repository))
                 workspace_receipt = WorkspaceReadOnlyGuard(
                     repository,
@@ -456,7 +486,32 @@ def main(argv: Sequence[str] | None = None) -> int:
                     request,
                     actions=(*imported.as_actions(), *request.actions),
                 )
-            run_options = {"harness_adapter": harness_adapter}
+            run_options: dict[str, object] = {}
+            if harness == "mini_swe_agent":
+                assert harness_adapter is not None
+                # mini-swe-agent has no Codex Thread. Plan once here, then hand
+                # the normalized Plan and provider-neutral driver to RunCoordinator.
+                planning = harness_adapter.plan(
+                    user_task=request.user_task,
+                    planning_context="",
+                    resume_thread_id=None,
+                    run_id=request.run_id,
+                    branch_id=request.branch_id,
+                    revision_id=request.revision_id,
+                    workspace_receipt=request.workspace_receipt,
+                    inject=False,
+                )
+                request = replace(
+                    request,
+                    plan=planning.plan,
+                    harness_thread_id=planning.thread_id,
+                )
+                run_options["harness_driver"] = harness_adapter.build_driver(
+                    native_compaction_timeout_seconds=config.native_compaction_timeout_seconds,
+                    native_compaction_enabled=config.provider.native_compaction_enabled,
+                )
+            else:
+                run_options["harness_adapter"] = harness_adapter
             if trusted_verifier is not None:
                 # Only the SWE-Milestone entry configures a host verifier; the
                 # frozen Python entry keeps its exact coordinator call.
