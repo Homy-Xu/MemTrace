@@ -1,12 +1,12 @@
 {
   "schema": "memtrace/release-gate@1",
   "package_version": "0.1.0",
-  "source_digest": "79879bd06c29b22fed69b211cec44fe9ce209e242e8da4e859c2d1b4424f2f27e2",
-  "wheel_sha256": "164aa197c8c9a57b2db3ebf78cbfce82e7597ee0105a113fd7a014229096115a",
+  "source_digest": "704212f27f6adfc639783b497831961e9dffb5c406a7697f16d94cbf57d695c9",
+  "wheel_sha256": "4e2310b1b60e940bc213e3890c2b4a96bb20af379c679d172d3e6759b0fdfaeb",
   "offline": {
     "pytest": {
       "status": "PASSED",
-      "tests": 87
+      "tests": 91
     },
     "compileall": "PASSED",
     "ruff_fatal": "PASSED",
