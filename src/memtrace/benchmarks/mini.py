@@ -1,48 +1,66 @@
-"""Small standalone entry point for a mini-swe-agent smoke or task run."""
+"""DeepSWE entry that runs mini-swe-agent 2.4.6 through the five-stage runtime."""
 from __future__ import annotations
 
 import argparse
 import os
 from pathlib import Path
 
-import yaml
+from ..cli import main as cli_main
 
-from ..harness.mini_swe_agent import MiniSweAgentBackend
-from .runner import BenchmarkRunner
+_DEFAULT_CONFIG = (
+    Path(__file__).resolve().parents[3]
+    / "configs"
+    / "mini_swe_agent"
+    / "memtensor-deepseek-v4-flash-0731-five-stage.json"
+)
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m memtrace.benchmarks.mini")
-    parser.add_argument("--model", default=os.environ.get("MEMTRACE_MINISWE_MODEL", ""))
+    parser.add_argument(
+        "--model",
+        default=os.environ.get("MEMTRACE_MINISWE_MODEL", "deepseek-v4-flash-0731"),
+    )
     parser.add_argument("--repository", type=Path, required=True)
     parser.add_argument("--task-file", type=Path, required=True)
     parser.add_argument("--run-root", type=Path, required=True)
-    parser.add_argument("--config", type=Path, help="mini-swe-agent YAML configuration")
-    parser.add_argument("--benchmark", default="smoke")
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=_DEFAULT_CONFIG,
+        help="five-stage runtime JSON configuration",
+    )
+    parser.add_argument(
+        "--reasoning-effort",
+        default=os.environ.get("MEMTRACE_MINISWE_REASONING_EFFORT", "high"),
+    )
+    parser.add_argument("--benchmark", default="deepswe")
     parser.add_argument("--task-id", default="local")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if not args.model.strip():
         parser.error("--model or MEMTRACE_MINISWE_MODEL is required")
-    task = args.task_file.read_text(encoding="utf-8")
-    configuration = {}
-    if args.config is not None:
-        loaded = yaml.safe_load(args.config.read_text(encoding="utf-8"))
-        if not isinstance(loaded, dict):
-            parser.error("--config must contain a YAML mapping")
-        configuration = loaded
-    backend = MiniSweAgentBackend(
-        repository_path=args.repository,
-        model=args.model,
-        run_root=args.run_root,
-        agent_config=configuration,
+    if not args.config.is_file():
+        parser.error(f"five-stage config not found: {args.config}")
+    del args.benchmark, args.task_id
+    return cli_main(
+        [
+            "run",
+            "--harness",
+            "mini_swe_agent",
+            "--repository",
+            str(args.repository),
+            "--task-file",
+            str(args.task_file),
+            "--run-root",
+            str(args.run_root),
+            "--config",
+            str(args.config),
+            "--model",
+            args.model,
+            "--reasoning-effort",
+            args.reasoning_effort,
+        ]
     )
-    result = BenchmarkRunner(backend, receipt_dir=args.run_root / "receipts").run(
-        benchmark=args.benchmark,
-        task_id=args.task_id,
-        task=task,
-    )
-    print(result.receipt)
-    return 0 if result.receipt["status"] == "COMPLETED" else 2
 
 
 if __name__ == "__main__":

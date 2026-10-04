@@ -76,10 +76,11 @@ Cross-Context Recovery.
 ## Provider boundary and receipts
 
 Codex exposes native planning, incremental plan updates, thread recovery, and
-provider capabilities when supported by the pinned App Server. mini-swe-agent
-exposes execution turns and trajectory usage; its capability record reports
-which Codex-specific features are unavailable. The runtime records those
-capabilities instead of fabricating parity.
+provider capabilities when supported by the pinned App Server. DeepSWE launches
+mini-swe-agent 2.4.6 through the same five-stage coordinator. That driver
+exposes plan mode, execution turns, trajectory usage, and context replacement.
+It reports native thread resume and native compaction as unavailable. The
+runtime records those capabilities instead of fabricating parity.
 
 The event ledger is append-only. Each event carries a run, branch, revision,
 source event, provider method, normalized payload, and a raw-provider summary.

@@ -1191,6 +1191,11 @@ class RunCoordinator:
                     execution.handle_dynamic_memory_tool,
                     execution.dynamic_memory_tool_response_written,
                 )
+                bind_review_criteria = getattr(
+                    live_driver, "bind_current_review_criteria", None
+                )
+                if callable(bind_review_criteria):
+                    bind_review_criteria(execution._current_result_criteria)
                 execution.recover_pending_epoch()
                 execution.recover_provider_compaction_refreshes()
             if live_driver is None:
