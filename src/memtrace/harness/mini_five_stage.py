@@ -125,8 +125,10 @@ def sanitize_mini_messages_for_api(
     chat-backed Responses endpoint: it rejects ``msg-…`` / ``chatcmpl-…``
     message ids (it wants ``msg_…``), message content that is not
     ``text`` / ``image_url`` / ``video_url``, top-level ``reasoning`` blocks
-    whose ``content[0]`` is not ``reasoning_text``, and any ``function_call``
-    that has no matching ``function_call_output``.
+    whose ``content[0]`` is not ``reasoning_text``, a replayed Responses
+    envelope (``created_at``, ``output``), function-call fields such as
+    ``caller``, and any ``function_call`` that has no matching
+    ``function_call_output``.
     """
 
     sanitized: list[dict[str, Any]] = []
@@ -135,10 +137,23 @@ def sanitize_mini_messages_for_api(
             continue
         if str(message.get("role", "")).strip().casefold() == "exit":
             continue
+        if _is_response_envelope(message):
+            sanitized.extend(
+                item
+                for item in _sanitize_item_list(message.get("output") or ())
+                if isinstance(item, dict)
+            )
+            continue
         cleaned = _sanitize_responses_item(dict(message))
         if cleaned is not None:
             sanitized.append(cleaned)
     return _pair_function_call_outputs(sanitized)
+
+
+def _is_response_envelope(item: Mapping[str, Any]) -> bool:
+    return item.get("object") == "response" or (
+        isinstance(item.get("output"), list) and "created_at" in item
+    )
 
 
 def _sanitize_responses_item(item: dict[str, Any]) -> dict[str, Any] | None:
@@ -182,7 +197,7 @@ def _sanitize_item_list(parts: Sequence[object]) -> list[object]:
 
 
 def _sanitize_message_content(parts: Sequence[object]) -> list[object]:
-    """MemTensor chat validation only accepts text / image / video parts."""
+    """MemTensor Responses input accepts input_text, not content type text."""
 
     cleaned: list[object] = []
     for part in parts:
@@ -195,8 +210,9 @@ def _sanitize_message_content(parts: Sequence[object]) -> list[object]:
             if text.strip():
                 cleaned.append({"type": "text", "text": text})
             continue
-        if kind in {"output_text", "input_text", "summary_text", "reasoning_text"}:
-            cleaned.append({"type": "text", "text": str(part.get("text") or "")})
+        if kind in {"output_text", "input_text", "summary_text", "reasoning_text", "text"}:
+            # Current MemTensor Responses validation rejects content type "text".
+            cleaned.append({"type": "input_text", "text": str(part.get("text") or "")})
             continue
         nested = _sanitize_responses_item(dict(part))
         if nested is not None:
@@ -240,7 +256,7 @@ def _reasoning_as_chat_message(item: Mapping[str, Any]) -> dict[str, Any] | None
         return None
     message = {
         "role": "assistant",
-        "content": [{"type": "text", "text": text}],
+        "content": [{"type": "input_text", "text": text}],
     }
     identifier = item.get("id")
     if isinstance(identifier, str) and identifier:
@@ -271,15 +287,21 @@ def _rewrite_illegal_message_id(item: dict[str, Any]) -> None:
         item["id"] = _legal_message_id(identifier)
 
 
+_FUNCTION_CALL_KEYS = ("type", "id", "call_id", "name", "arguments", "status")
+_FUNCTION_CALL_OUTPUT_KEYS = ("type", "call_id", "output")
+
+
 def _strip_empty_function_call_fields(item: dict[str, Any]) -> None:
     kind = str(item.get("type") or "").strip().casefold()
-    if kind != "function_call":
+    if kind == "function_call":
+        allowed = {key: item[key] for key in _FUNCTION_CALL_KEYS if key in item}
+        item.clear()
+        item.update(allowed)
         return
-    if item.get("content") is None:
-        item.pop("content", None)
-    for key in ("phase", "quality", "size", "role"):
-        if item.get(key) in ("", None):
-            item.pop(key, None)
+    if kind == "function_call_output":
+        allowed = {key: item[key] for key in _FUNCTION_CALL_OUTPUT_KEYS if key in item}
+        item.clear()
+        item.update(allowed)
 
 
 def _pair_function_call_outputs(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -998,13 +1020,14 @@ class MiniSweAgentHarnessAdapter:
                     *list(getattr(runtime_self, "extra_tools", None) or ()),
                 ]
                 extra = dict(runtime_self.config.model_kwargs | kwargs)
-                extra.setdefault(
-                    "reasoning",
-                    {
-                        "effort": self.reasoning_effort or "high",
-                        "summary": "none",
-                    },
-                )
+                # MemTensor rejects reasoning.summary. Effort stays; the summary
+                # field is omitted rather than sent as "none".
+                reasoning = extra.get("reasoning")
+                if not isinstance(reasoning, dict):
+                    reasoning = {}
+                reasoning = {key: value for key, value in reasoning.items() if key != "summary"}
+                reasoning.setdefault("effort", self.reasoning_effort or "high")
+                extra["reasoning"] = reasoning
                 return litellm.responses(
                     model=runtime_self.config.model_name,
                     input=sanitize_mini_messages_for_api(messages),

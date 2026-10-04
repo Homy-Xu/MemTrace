@@ -6,7 +6,10 @@ import pytest
 
 from memtrace.cli import main
 from memtrace.config import load_config
-from memtrace.harness.mini_five_stage import MiniSweAgentHarnessAdapter
+from memtrace.harness.mini_five_stage import (
+    MiniSweAgentHarnessAdapter,
+    sanitize_mini_messages_for_api,
+)
 
 
 class _FakeModel:
@@ -136,3 +139,40 @@ def test_mini_harness_rejects_codex_only_flags(tmp_path: Path, capsys: pytest.Ca
     )
     assert code == 2
     assert "only available with the Codex Harness" in capsys.readouterr().err
+
+
+def test_memtensor_replay_drops_rejected_response_fields() -> None:
+    cleaned = sanitize_mini_messages_for_api(
+        [
+            {
+                "object": "response",
+                "created_at": 1,
+                "output": [
+                    {
+                        "type": "reasoning",
+                        "id": "rs_1",
+                        "summary": [{"type": "summary_text", "text": "look around"}],
+                    },
+                    {
+                        "type": "function_call",
+                        "id": "fc_1",
+                        "call_id": "call_1",
+                        "name": "bash",
+                        "arguments": "{}",
+                        "caller": {"type": "direct"},
+                        "namespace": "functions",
+                    },
+                ],
+            },
+            {"type": "function_call_output", "call_id": "call_1", "output": "ok"},
+        ]
+    )
+    assert all(item.get("object") != "response" and "created_at" not in item for item in cleaned)
+    calls = [item for item in cleaned if item.get("type") == "function_call"]
+    assert len(calls) == 1
+    assert "caller" not in calls[0]
+    assert "namespace" not in calls[0]
+    assert calls[0]["call_id"] == "call_1"
+    assert any(item.get("role") == "assistant" for item in cleaned)
+    assistant = next(item for item in cleaned if item.get("role") == "assistant")
+    assert assistant["content"][0]["type"] == "input_text"
