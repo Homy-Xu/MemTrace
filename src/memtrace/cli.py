@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import sys
 from dataclasses import replace
 from datetime import UTC, datetime
@@ -17,8 +16,6 @@ from .harness import CodexHarnessAdapter
 from .migration import LegacyImportError, LegacyPageReader
 from .orchestration import RunCoordinator, RunRequest
 from .orchestration.planning_coordinator import WorkspaceReadOnlyGuard
-
-_ENVIRONMENT_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -59,20 +56,6 @@ def _parser() -> argparse.ArgumentParser:
             "official prompt file must not be edited to carry)"
         ),
     )
-    run.add_argument(
-        "--env-file",
-        type=Path,
-        action="append",
-        default=[],
-        help=(
-            "private NAME=value file to load before the Provider starts; repeat for a provider "
-            "file and a proxy file (the file is never executed)"
-        ),
-    )
-    run.add_argument(
-        "--provider-api-key-env",
-        help="override the configured Provider credential variable name",
-    )
     run.add_argument("--model")
     run.add_argument(
         "--codex-bin",
@@ -105,14 +88,6 @@ def _parser() -> argparse.ArgumentParser:
         "validate-config", help="validate runtime dependencies before Planning"
     )
     validate.add_argument("--config", type=Path)
-    validate.add_argument(
-        "--env-file",
-        type=Path,
-        action="append",
-        default=[],
-        help="private NAME=value file to load before checking credential presence (repeatable)",
-    )
-    validate.add_argument("--provider-api-key-env")
 
     inspect = subcommands.add_parser("inspect", help="read an immutable V2 result")
     inspect.add_argument("--run-root", type=Path, required=True)
@@ -129,13 +104,6 @@ def _parser() -> argparse.ArgumentParser:
     swe_evo.add_argument("--model")
     swe_evo.add_argument("--reasoning-effort")
     swe_evo.add_argument("--codex-bin")
-    swe_evo.add_argument(
-        "--env-file",
-        type=Path,
-        action="append",
-        default=[],
-        help="private NAME=value file to load before the Provider starts (repeatable)",
-    )
     swe_evo.add_argument("--dataset-python", type=Path)
     swe_evo.add_argument("--evaluator-python", type=Path)
     swe_evo.add_argument(
@@ -169,13 +137,6 @@ def _parser() -> argparse.ArgumentParser:
     swe_batch.add_argument("--model")
     swe_batch.add_argument("--reasoning-effort")
     swe_batch.add_argument("--codex-bin")
-    swe_batch.add_argument(
-        "--env-file",
-        type=Path,
-        action="append",
-        default=[],
-        help="private NAME=value file to load before the Provider starts (repeatable)",
-    )
     swe_batch.add_argument("--dataset-python", type=Path)
     swe_batch.add_argument("--evaluator-python", type=Path)
     swe_batch.add_argument(
@@ -231,43 +192,17 @@ def _default_run_root(repository: Path, label: str) -> Path:
     return repository.expanduser().resolve() / ".homy-v2" / "runs" / f"{label}-{timestamp}"
 
 
-def _load_cli_environment_files(args: argparse.Namespace) -> None:
-    paths = tuple(getattr(args, "env_file", ()) or ())
-    if not paths:
-        return
-    from .harness.environment import apply_environment_files
-
-    apply_environment_files(paths)
-
-
-def _override_provider_key_env(config, override: str | None):
-    if override is None:
-        return config
-    name = override.strip()
-    if not name:
-        raise ValueError("provider API key override must be non-empty")
-    if _ENVIRONMENT_NAME.fullmatch(name) is None:
-        raise ValueError("provider API key override must be an environment-variable name")
-    return replace(
-        config,
-        provider=replace(config.provider, api_key_env=name),
-        redaction_env_vars=tuple(dict.fromkeys((*config.redaction_env_vars, name))),
-    )
-
-
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
-        _load_cli_environment_files(args)
         if args.command == "validate-config":
             config = load_config(args.config)
-            config = _override_provider_key_env(config, args.provider_api_key_env)
             print(
                 json.dumps(
                     {
                         "valid": True,
                         "schema_version": config.schema_version,
-                        "runtime_lifecycle": "shared",
+                        "five_stage_chain": True,
                         "rich_graph": config.stages.rich_graph,
                         "provider": {
                             "id": config.provider.id,
@@ -369,8 +304,6 @@ def main(argv: Sequence[str] | None = None) -> int:
             # Config is parsed and cross-stage validated before RunRequest or
             # any Planning/Registry object is created.
             config = load_config(args.config)
-            if args.command == "run":
-                config = _override_provider_key_env(config, args.provider_api_key_env)
             repository = args.repository.expanduser().resolve()
             harness = (
                 "scenario"
@@ -421,7 +354,6 @@ def main(argv: Sequence[str] | None = None) -> int:
                     if appendix.strip():
                         user_task = (user_task or "").rstrip() + "\n\n" + appendix.strip() + "\n"
                 selected_model = args.model or config.provider.model
-                selected_reasoning_effort = args.reasoning_effort or config.codex_reasoning_effort
                 if not user_task or not user_task.strip() or not selected_model:
                     raise ValueError(
                         "Codex harness requires --task/--task-file and a model from "
@@ -463,8 +395,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                     from .harness.multilang_normalizer import MultilangPlanNormalizer
                     normalizer_options["normalizer"] = MultilangPlanNormalizer()
                 if args.repository_stream is not None:
-                    from .swe_milestone.adapter import SweMilestoneCodexHarnessAdapter
                     from .swe_milestone.repository_stream import RepositoryStream
+                    from .swe_milestone.adapter import SweMilestoneCodexHarnessAdapter
                     coordinator_options["repository_stream"] = RepositoryStream(
                         args.repository_stream, repository)
                     # Expose the same optional navigation tool to Python too;
@@ -476,8 +408,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                     run_root=run_root,
                     provider=config.provider,
                     executable=args.codex_bin,
-                    timeout_seconds=config.codex_timeout_seconds,
-                    reasoning_effort=selected_reasoning_effort,
+                    reasoning_effort=args.reasoning_effort,
                     sandbox_mode=config.codex_sandbox_mode,
                     **normalizer_options,
                 )
@@ -493,7 +424,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                         "repository": repository_id,
                         "task": user_task,
                         "model": selected_model,
-                        "reasoning_effort": selected_reasoning_effort,
+                        "reasoning_effort": args.reasoning_effort,
                         "run_root": str(run_root),
                         **({"repository_stream": coordinator_options["repository_stream"].contract}
                            if args.repository_stream is not None else {}),

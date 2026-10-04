@@ -6,9 +6,8 @@ import json
 import os
 import re
 import tempfile
-from collections.abc import Mapping
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 RECEIPT_SCHEMA = "memtrace/benchmark-receipt@1"
 _SECRET = re.compile(r"(?i)(?:sk-[A-Za-z0-9_-]{12,}|bearer\s+[A-Za-z0-9._-]{12,})")
@@ -20,8 +19,6 @@ class ReceiptError(RuntimeError):
 
 
 def redact(value: Any) -> Any:
-    if isinstance(value, Path):
-        value = str(value)
     if isinstance(value, Mapping):
         return {str(k): redact(v) for k, v in value.items()}
     if isinstance(value, (list, tuple)):
@@ -29,11 +26,7 @@ def redact(value: Any) -> Any:
     if isinstance(value, str):
         value = _SECRET.sub("<redacted>", value)
         return _PRIVATE_PATH.sub("<private-path>", value)
-    if value is None or isinstance(value, (bool, int, float)):
-        return value
-    # Receipts must remain JSON-safe even when a private launcher passes an
-    # enum, UUID, or other scalar-like object in provenance.
-    return str(value)
+    return value
 
 
 def build_receipt(

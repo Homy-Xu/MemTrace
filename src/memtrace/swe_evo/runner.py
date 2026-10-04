@@ -602,7 +602,6 @@ def _run_swe_evo_instance(
             api_key_env_override=provider_api_key_env,
         )
         selected_model = model or config.provider.model
-        selected_reasoning_effort = reasoning_effort or config.codex_reasoning_effort
         if not selected_model:
             raise ValueError("SWE-EVO requires a model")
     with journal.phase("LOAD_INSTANCE"):
@@ -618,7 +617,7 @@ def _run_swe_evo_instance(
         "implementation": "memtrace",
         "instance_id": instance.instance_id,
         "model": selected_model,
-        "reasoning_effort": selected_reasoning_effort,
+        "reasoning_effort": reasoning_effort,
         "codex_bin": resolved_codex_bin,
         "config_path": str(resolved_config),
         "config_digest": _file_sha256(resolved_config),
@@ -819,9 +818,8 @@ def _run_swe_evo_instance(
                 run_root=runtime_root,
                 provider=config.provider,
                 executable=resolved_codex_bin,
-                reasoning_effort=selected_reasoning_effort,
+                reasoning_effort=reasoning_effort,
                 sandbox_mode=config.codex_sandbox_mode,
-                timeout_seconds=config.codex_timeout_seconds,
             )
             repository_id = stable_id("repo_", str(workspace))
             workspace_receipt = WorkspaceReadOnlyGuard(workspace, ()).capture()
@@ -952,7 +950,7 @@ def _run_swe_evo_instance(
                     runtime_result_path=runtime_result.result_path,
                     model=selected_model,
                     provider=config.provider.id,
-                    reasoning_effort=selected_reasoning_effort,
+                    reasoning_effort=reasoning_effort,
                     build_identity=identity.as_mapping(),
                     swe_bench_root=resolved_swe_bench,
                     evaluator_python=selected_evaluator_python,

@@ -12,13 +12,10 @@ combination:
 | mini-swe-agent 2.4.6 | smoke | smoke | smoke |
 
 Each smoke uses a new run root, repository checkout, container identity,
-provider session, and receipt path. The mini-swe-agent reference run uses
-version 2.4.6, a 200,000-token context window, no numeric step limit, and an
-eight-hour wall-clock limit. A smoke is complete only when generation,
+provider session, and receipt path. A smoke is complete only when generation,
 official evaluation, score publication, usage accounting, and cleanup all have
 receipts. A launcher, provider, container, evaluator, or network failure is
-recorded with its specific infrastructure or agent failure class and is never
-converted into a model score.
+recorded as `INFRA_OR_AGENT_FAILURE` and is never converted into a model score.
 
 The public release manifest records whether each combination is complete or
 blocked. A blocked smoke is an explicit reproducibility status, not an inferred
@@ -42,9 +39,7 @@ Full task datasets, hidden tests, private prompts, provider configuration,
 cluster paths, raw trajectories, Docker state, and evaluator workspaces are
 intentionally excluded. Reproduction requires the corresponding external
 benchmark assets and an authorized provider credential supplied through the
-protected environment. See [deepswe-reproduction.md](deepswe-reproduction.md)
-for the canary-to-full procedure and the mapping from the historical server
-configuration to the public settings.
+protected environment.
 
 Use a fresh run root and independent repository checkout for each attempt. Do
 not reuse a receipt directory, container identity, provider session, or mutable

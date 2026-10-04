@@ -2,69 +2,78 @@
   <h1>MemTrace</h1>
   <p><strong>State-consistent memory for long-horizon coding agents</strong></p>
   <p>
-    <a href="https://github.com/Homy-Xu/MemTrace"><img src="https://img.shields.io/badge/repository-MemTrace-24292f?style=flat-square&logo=github" alt="MemTrace repository"></a>
-    <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-2ea44f?style=flat-square" alt="Apache 2.0 license"></a>
+    <a href="https://github.com/Homy-Xu/MemTrace/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-2ea44f?style=flat-square" alt="Apache 2.0 license"></a>
     <img src="https://img.shields.io/badge/python-3.11%2B-3776ab?style=flat-square&logo=python&logoColor=white" alt="Python 3.11 or newer">
     <img src="https://img.shields.io/badge/mini--swe--agent-2.4.6-4b8bbe?style=flat-square" alt="mini-swe-agent 2.4.6">
-  </p>
-  <p>
-    <a href="#-overview">Overview</a> ·
-    <a href="#-quick-start">Quick start</a> ·
-    <a href="#-run-a-harness">Run a harness</a> ·
-    <a href="#-benchmark-integrations">Benchmarks</a>
+    <img src="https://img.shields.io/badge/benchmarks-SWE--Milestone%20%7C%20DeepSWE%20%7C%20SWE--EVO-6f42c1?style=flat-square" alt="Supported benchmarks">
   </p>
 </div>
 
 <div align="center">
-  <img src="docs/overview.png" alt="MemTrace memory traces, repository state, and validated restoration" width="94%">
+  <img src="docs/overview.png" alt="MemTrace: memory traces, working memory, state alignment, and validated restoration" width="96%">
 </div>
 
-## 📖 Overview
+MemTrace helps coding agents continue long-horizon repository work after their
+active context has been refreshed. It records execution as immutable **Memory
+Traces**, binds each trace to the repository state in which it was produced,
+and keeps only the evidence needed for the next action in **Working Memory**.
+Historical evidence is restored only after it has been aligned with the current
+task and repository state.
 
-Long-running coding agents lose useful context as tasks grow. MemTrace gives an
-agent a durable, state-aware memory layer that can survive context refreshes
-without treating old observations as automatically valid.
+The runtime exposes the same provider-neutral lifecycle to two backends:
 
-MemTrace records execution as **Memory Traces**, anchors each trace to the
-repository state that produced it, and restores only evidence that remains
-relevant to the current task. The runtime is provider-neutral and can be used
-with either of the following harnesses:
+- **Codex App Server** — native JSONL events, planning, workspace revisions,
+  memory-tool callbacks, and context recovery.
+- **mini-swe-agent 2.4.6** — native trajectories with model/tool events,
+  token usage, cost, wall-clock time, and exit status.
 
-- **Codex App Server** for native JSONL events and workspace revisions.
-- **mini-swe-agent 2.4.6** for model and tool trajectories with token, cost,
-  wall-clock, and exit-status accounting.
+## 🧭 Contents
 
-## ✨ Highlights
+- [Architecture](#-architecture)
+- [Installation](#-installation)
+- [Run a Harness](#-run-a-harness)
+- [Benchmark adapters](#-benchmark-adapters)
+- [Receipts and reproducibility](#-receipts-and-reproducibility)
+- [Terminology](#-terminology)
+- [Project layout](#-project-layout)
+- [Limitations](#-limitations)
+- [License](#-license)
 
-- **State-aware memory** — connect task progress, repository changes, tests,
-  decisions, and corrections to explicit state anchors.
-- **Validated restoration** — perform Trace Localization, Trace Validation,
-  and State Alignment Checks before loading historical evidence.
-- **One runtime contract** — use the same session, checkpoint, resume, usage,
-  and receipt interfaces across harnesses and benchmarks.
-- **Reproducible runs** — keep source digests, evaluator status, usage, cost,
-  and failure classification in append-only receipts.
+## 🧠 Architecture
 
-## 🚀 Quick start
+MemTrace addresses **task-state drift** and **state-memory misalignment**. The
+method has three connected responsibilities:
 
-### Requirements
+1. **Memory Trace formation** — consolidate completed observations, edits, test
+   outcomes, decisions, and corrections with repository and provenance anchors.
+2. **MTG–RSG alignment** — connect the Memory Trace Graph (MTG), which records
+   execution relations, with the Repository State Graph (RSG), which describes
+   the current files, symbols, and tests.
+3. **Validated restoration** — localize Trace Candidates, perform Trace
+   Validation and State Alignment Checks, and load only the evidence required
+   to continue from the Execution Frontier.
 
-- Python 3.11 or newer
-- Git
-- A provider credential for live model runs
+The provider-neutral lifecycle is:
 
-### Installation
+```text
+start_session → plan → next_event / execute → checkpoint → resume → usage → close
+```
+
+See [docs/architecture.md](docs/architecture.md) for the method-level data
+flow and [docs/overview.pdf](docs/overview.pdf) for the architecture
+illustration.
+
+## ⚡ Installation
+
+MemTrace requires Python 3.11 or newer.
 
 ```bash
-git clone https://github.com/Homy-Xu/MemTrace.git
-cd MemTrace
-
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install -e '.[dev]'
 ```
 
-Install the harness you plan to use:
+Install the backend you need:
 
 ```bash
 python -m pip install -e '.[codex]'
@@ -72,15 +81,17 @@ python -m pip install -e '.[codex]'
 python -m pip install -e '.[mini-swe-agent]'
 ```
 
-Credentials are read from protected environment variables or private env
-files. Start from [.env.example](.env.example), and never commit populated
-credentials.
+The Codex path pins `openai-codex-cli-bin==0.144.4`; the mini path pins
+`mini-swe-agent==2.4.6`. Credentials are read from protected environment
+variables. Literal keys are never accepted in configuration files or command
+arguments. Start from [.env.example](.env.example) and keep the populated file
+outside Git.
 
-## 🧭 Run a harness
+## 🚀 Run a Harness
 
-Each run should use a new repository workspace and run root. The run root keeps
-the event ledger, Memory Traces, checkpoints, trajectories, and receipts for
-that attempt.
+Use a fresh run root for every task. A run root contains the event ledger,
+durable trace state, checkpoints, trajectories, and receipts and is never
+reused across attempts.
 
 ### Codex App Server
 
@@ -93,139 +104,125 @@ memtrace run \
   --run-root /tmp/memtrace-codex-run
 ```
 
-For a provider with an OpenAI-compatible Responses endpoint, pass a private
-configuration and env files:
+For DeepSeek's OpenAI-compatible Responses endpoint, use
+[configs/codex/deepseek.yaml](configs/codex/deepseek.yaml):
 
 ```bash
+export DEEPSEEK_API_KEY='set-this-locally'
+export MEMTRACE_CODEX_MODEL='deepseek-flash'
+
 memtrace run \
   --harness codex \
-  --config configs/codex/memtensor-deepseek-v4-flash.json \
-  --env-file /protected/provider.env \
-  --env-file /protected/proxy.env \
-  --provider-api-key-env MEMTENSOR_API_KEY \
-  --model deepseek-v4-flash \
-  --reasoning-effort high \
+  --config configs/codex/deepseek.yaml \
+  --model "$MEMTRACE_CODEX_MODEL" \
   --repository /path/to/repository \
   --task-file task.txt \
-  --run-root /tmp/memtrace-codex-run
+  --run-root /tmp/memtrace-codex-deepseek
 ```
-
-See [docs/codex-benchmark-profile.md](docs/codex-benchmark-profile.md) for
-the provider contract and benchmark-specific boundaries.
 
 ### mini-swe-agent 2.4.6
 
 ```bash
+export DEEPSEEK_API_KEY='set-this-locally'
+export MEMTRACE_MINISWE_MODEL='deepseek/deepseek-flash'
+
 python -m memtrace.benchmarks.mini \
-  --model "${MEMTRACE_MINISWE_MODEL:-deepseek-v4-flash}" \
+  --model "$MEMTRACE_MINISWE_MODEL" \
   --repository /path/to/repository \
   --task-file task.txt \
-  --config configs/mini_swe_agent/memtensor-deepseek-v4-flash.yaml \
+  --config configs/mini_swe_agent/default.yaml \
   --run-root /tmp/memtrace-mini-run \
   --benchmark smoke \
   --task-id local
 ```
 
-The shared runner records the model trajectory and returns a receipt. It does
-not reuse another task's workspace, provider socket, label, or run root.
+DeepSeek currently documents `deepseek-flash` as the model identifier. The
+legacy `deepseek-v4-flash` name remains accepted as an alias; use
+`deepseek/deepseek-v4-flash` only when a deployment specifically requires that
+legacy spelling.
 
-For a protected MemTensor run, set `MEMTENSOR_API_KEY` and optionally
-`MEMTRACE_MINISWE_BASE_URL` in the execution environment before starting the
-command. The public configuration fixes the model context at 200,000 tokens,
-leaves the numeric step budget unset, and uses an eight-hour wall-clock limit.
-See [docs/deepswe-reproduction.md](docs/deepswe-reproduction.md) for the
-canary and full-run procedure.
+The benchmark launchers accept only the shared Harness lifecycle. They do not
+silently substitute a standalone runner or reuse another task's workspace,
+container, provider socket, label, or receipt.
 
-## 🧪 Benchmark integrations
+## 🧪 Benchmark adapters
 
-MemTrace keeps benchmark-specific orchestration at the edge of the runtime:
+The public adapters keep benchmark-specific concerns outside the memory
+runtime:
 
-| Benchmark | Adapter responsibilities |
-| --- | --- |
-| **SWE-Milestone** | Repository streams, official evaluator handoff, and immutable attempt receipts |
-| **DeepSWE** | Task and image bridges, provider isolation, and infrastructure-failure classification |
-| **SWE-EVO** | Version-jump tasks, continuous Execution Milestones, host-managed verification, and contamination checks |
+- **SWE-Milestone** — repository streams, official evaluator handoff, and
+  immutable attempt receipts.
+- **DeepSWE** — multilingual task/image bridges, provider isolation, and
+  infrastructure-failure classification.
+- **SWE-EVO** — version-jump tasks, continuous Execution Milestones,
+  host-managed verification, and fixture-contamination checks.
 
-The repository contains the public adapters and offline fixtures. Hidden tests,
-private prompts, cluster launch scripts, and raw benchmark trajectories remain
-outside the public source tree.
+Full benchmark datasets, hidden tests, private prompts, cluster launch scripts,
+and raw trajectories remain outside this repository.
 
 ## 📊 Receipts and reproducibility
 
-Every task receipt records the benchmark, task identifier, harness and version,
-source digest, evaluator state, score when available, F2P/P2P counts, wall-clock
-time, token usage, cost, and failure class. Credentials and private filesystem
-paths are redacted.
+Every task receipt records the benchmark, task identifier, Harness and version,
+source digest, wheel digest, official score when available, F2P/P2P counts,
+wall time, token usage, cost, generation status, evaluation status, and failure
+class. Receipts are append-only and redact credentials and private filesystem
+paths.
 
-Public manifests distinguish complete campaigns, reruns, score-only regrades,
-infrastructure failures, and model-quality failures. Historical results keep
+Public manifests distinguish a complete campaign, rerun, score-only regrade,
+infrastructure failure, and model-quality failure. Historical results retain
 their provenance and are never silently combined into a new benchmark claim.
-
-Run the local validation suite with:
 
 ```bash
 python -m compileall -q src
 python -m pytest tests/unit tests/contract tests/integration
 ```
 
-See [docs/reproducibility.md](docs/reproducibility.md) and
-[results/README.md](results/README.md) for the receipt format and release
-checks.
+The release smoke matrix and its current gate status are in
+[docs/reproducibility.md](docs/reproducibility.md) and
+[results/manifests/release-gate.json](results/manifests/release-gate.json).
 
-## 🧠 Terminology
+## 📚 Terminology
 
-MemTrace uses the vocabulary defined in [docs/terminology.md](docs/terminology.md):
-
-- **Memory Trace** and **Memory Episode** for durable execution evidence.
-- **Trace Store** and **Memory Index** for persistence and lookup.
-- **Working Memory** for the evidence admitted to the current context.
-- **Memory Trace Graph (MTG)** and **Repository State Graph (RSG)** for linking
-  execution history with repository state.
-- **Memory Loading**, **Memory Consolidation**, and **Selective Memory
-  Restoration** for the lifecycle of durable evidence.
-
-Source-level compatibility names remain available where existing integrations
-depend on them; they are documented as implementation aliases rather than new
-paper concepts.
+The canonical vocabulary is documented in
+[docs/terminology.md](docs/terminology.md). It is shared with the paper and
+should be used in new documentation, experiment reports, and issue
+discussions. Stable implementation identifiers and historical receipt fields
+remain available for compatibility.
 
 ## 🗂️ Project layout
 
 ```text
 src/memtrace/
-├── core/                   runtime contracts and persistence
-├── planning/               task and Execution Milestone state
-├── page_store/             compatibility implementation for the Trace Store
-├── semantic_memory/        trace localization and repository alignment
-├── recall/                 Trace Recall and validated restoration
-├── context_runtime/        Working Memory and checkpoints
-├── rich_graph/             optional Repository State Graph indexing
-├── harness/codex/          Codex App Server backend
-├── harness/mini_swe_agent/ mini-swe-agent 2.4.6 backend
-└── benchmarks/             shared runner and benchmark adapters
+├── core runtime contracts and persistence
+├── planning/             task and Execution Milestone state
+├── page_store/           compatibility implementation for the Trace Store
+├── semantic_memory/      trace localization and repository alignment
+├── recall/               Trace Recall and validated restoration
+├── context_runtime/      Working Memory, compaction, checkpoints
+├── rich_graph/           optional Repository State Graph indexing
+├── harness/codex/        Codex App Server backend
+├── harness/mini_swe_agent/  mini-swe-agent 2.4.6 backend
+└── benchmarks/           shared runner and benchmark bridges
 ```
 
-The public method description is in [docs/architecture.md](docs/architecture.md).
+The source-level `page_store` name is retained for compatibility with existing
+integrations; the public concept is **Trace Store**. The README structure
+follows the concise research-code presentation used by
+[RepoGraph](https://github.com/ozyyshr/RepoGraph) and
+[Paper2Code](https://github.com/going-doer/Paper2Code). The paired
+representation and reconstruction boundary is inspired by
+[RPG-Encoder](https://github.com/microsoft/RPG-ZeroRepo/tree/main/zerorepo/rpg_encoder).
 
-## 🤝 Contributing
+## 🔒 Limitations
 
-Issues and pull requests are welcome. Before submitting a change:
-
-1. Keep provider credentials, private prompts, raw trajectories, and cluster
-   paths out of commits.
-2. Add or update the relevant unit, contract, or offline smoke test.
-3. Run `git diff --check` and the validation commands above.
-4. Explain the source digest, evaluator status, and failure class for any new
-   benchmark result.
-
-## 📌 Limitations
-
-- Official benchmark scores require the corresponding external evaluator.
-- Live provider runs require credentials and network access in the protected
-  environment.
-- The Codex backend fails closed unless the verified workspace-revision and
-  memory-tool bridges are available.
+- Official benchmark scores require the corresponding external evaluator and
+  are never inferred from local tests.
+- Real provider smoke runs require a model credential in the protected
+  environment; the repository ships offline fixtures for contract testing.
+- The Codex backend intentionally fails closed unless the verified
+  `WorkspaceRevisionTracker` and memory-tool bridge are supplied.
 
 ## 📄 License
 
-MemTrace is released under the [Apache License 2.0](LICENSE). Optional harness
+MemTrace is released under the [Apache License 2.0](LICENSE). Optional Harness
 and benchmark dependencies retain their upstream licenses.

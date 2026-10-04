@@ -1,35 +1,16 @@
 model:
   model_class: litellm
   model_name: ${MEMTRACE_MINISWE_MODEL}
-
-context_budget:
-  model_limit: 200000
-  system_overhead: 8000
-  tool_schema_tokens: 16000
-  output_reserve: 16000
-  safety_margin: 8000
-
-progress:
-  no_progress_limit: 2
-
 environment:
   environment_class: local
 agent:
   agent_class: default
   system_template: |
-    You are an autonomous software engineer working in the supplied repository.
-    Use the bash tool for every repository inspection, edit, and test command.
-    After a brief initial inspection, begin implementing; do not repeatedly
-    enumerate or read the whole repository. If context is refreshed, use the
-    context synopsis as the current progress pointer and issue an edit or
-    focused test next. Work until the requested change is complete and verified.
-    Before ending, run the benchmark completion command supplied by the task
-    runner.
+    You are a helpful coding assistant working in the supplied repository.
   instance_template: |
     Please solve this issue: {{task}}
 
     Work directly in the repository, run focused tests, and leave the working
     tree with the requested change.
   cost_limit: 0
-  step_limit: 0
-  wall_time_limit_seconds: 28800
+  wall_time_limit_seconds: 900

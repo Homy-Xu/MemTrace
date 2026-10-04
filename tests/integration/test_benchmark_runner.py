@@ -2,10 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from memtrace.benchmarks import BenchmarkRunner
-from memtrace.benchmarks.runner import classify_failure
 from memtrace.harness.base import EventQueueMixin, HarnessCheckpoint, HarnessSession, UsageSnapshot
 from memtrace.harness.contracts import HarnessCapabilities, HarnessEvent, HarnessEventType
 
@@ -80,18 +77,3 @@ def test_runner_writes_one_redacted_receipt(tmp_path: Path) -> None:
     receipt = tmp_path / "smoke-fake-1.json"
     assert receipt.is_file()
     assert '"status": "COMPLETED"' in receipt.read_text()
-
-
-def test_runner_rejects_path_like_launcher_metadata(tmp_path: Path) -> None:
-    with pytest.raises(TypeError, match=r"provenance\['commit'\]"):
-        BenchmarkRunner(FakeBackend(), receipt_dir=tmp_path).run(
-            benchmark="smoke",
-            task_id="fake-1",
-            task="implement the requested change",
-            provenance={"commit": tmp_path / "commit"},
-        )
-
-
-def test_failure_classification_is_provider_neutral() -> None:
-    assert classify_failure(RuntimeError("401 Invalid token")) == "PROVIDER_AUTH_FAILURE"
-    assert classify_failure(RuntimeError("context window exceeded")) == "CONTEXT_LIMIT_FAILURE"

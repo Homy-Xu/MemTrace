@@ -235,12 +235,6 @@ class V2RuntimeConfig:
     acceptance_budgets: Mapping[str, int] = field(default_factory=dict)
     engagement: EngagementConfiguration = field(default_factory=EngagementConfiguration)
     codex_sandbox_mode: str = "workspace-write"
-    # The historical benchmark contract allowed a long-running Codex Turn to
-    # remain active for three hours.  Keep the shorter value as the backwards
-    # compatible default, while making the benchmark value explicit in its
-    # profile instead of hiding it in a launcher.
-    codex_timeout_seconds: float = 600.0
-    codex_reasoning_effort: str | None = None
     page_policy: PagePolicy = field(default_factory=PagePolicy)
     context_budget: ContextBudget = field(
         default_factory=lambda: ContextBudget(
@@ -288,10 +282,6 @@ class V2RuntimeConfig:
             raise ConfigurationError(
                 "codex_sandbox_mode must be workspace-write or danger-full-access"
             )
-        if not 30.0 <= self.codex_timeout_seconds <= 43_200.0:
-            raise ConfigurationError("codex_timeout_seconds must be between 30 and 43200")
-        if self.codex_reasoning_effort is not None and not self.codex_reasoning_effort.strip():
-            raise ConfigurationError("codex_reasoning_effort must be non-empty when provided")
         recall_budgets = (
             self.recall_max_pages,
             self.recall_max_tokens,
@@ -402,12 +392,6 @@ class V2RuntimeConfig:
                     dict(value.get("engagement", {}) or {})
                 ),
                 codex_sandbox_mode=str(value.get("codex_sandbox_mode", "workspace-write")),
-                codex_timeout_seconds=float(value.get("codex_timeout_seconds", 600.0)),
-                codex_reasoning_effort=(
-                    None
-                    if value.get("codex_reasoning_effort") is None
-                    else str(value["codex_reasoning_effort"])
-                ),
                 page_policy=PagePolicy(
                     min_tokens=int(page_value.get("min_tokens", 2048)),
                     target_tokens=int(page_value.get("target_tokens", 6144)),
