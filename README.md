@@ -22,14 +22,15 @@ task and repository state.
 
 The runtime exposes the same provider-neutral lifecycle to two backends:
 
-- **Codex App Server** — native JSONL events, planning, workspace revisions,
-  memory-tool callbacks, and context recovery.
+- **Codex CLI** — native JSONL events, planning, workspace revisions,
+  memory-tool callbacks, and context recovery through the App Server.
 - **mini-swe-agent 2.4.6** — native trajectories with model/tool events,
   token usage, cost, wall-clock time, and exit status.
 
 ## 🧭 Contents
 
 - [Architecture](#-architecture)
+- [How the modules work](#how-the-modules-work)
 - [Installation](#-installation)
 - [Run a Harness](#-run-a-harness)
 - [Benchmark adapters](#-benchmark-adapters)
@@ -63,6 +64,47 @@ See [docs/architecture.md](docs/architecture.md) for the method-level data
 flow and [docs/overview.pdf](docs/overview.pdf) for the architecture
 illustration.
 
+## How the modules work
+
+Both harnesses call the same runtime. The paper's three steps — state-bound
+Memory Traces, MTG–RSG projection, and validated restoration — are carried by
+five modules. A Memory Trace is an immutable record of one completed
+observation, edit, test result, decision, or correction. The two graphs do
+not share nodes.
+
+| Module | Keeps | Produces |
+| --- | --- | --- |
+| Planning | The task text and what is still unresolved | The Execution Frontier and its Execution Milestones |
+| Trace Store | Completed observations, edits, tests, and corrections | An immutable Memory Trace and one Memory Anchor |
+| Memory Trace Graph (MTG) | Order, dependency, verification, correction, and supersession | Relations among Memory Traces |
+| Repository State Graph (RSG) | Current files, symbols, and tests | `defines`, `calls`, `imports`, and `covers` relations |
+| Validated restoration | Trace Candidates after a Context Refresh | Working Memory that contains only evidence that still applies |
+
+**Graph anchoring.** An anchor addresses one side of the pair. A Memory Anchor
+addresses exactly one Memory Trace. A Repository Anchor addresses one file,
+symbol, or test. Sealing a trace does not copy RSG nodes into the MTG, and it
+does not copy traces into the RSG. It records a projection: each file, symbol,
+or test cited in the trace body becomes a pair `(Memory Trace, repository entity)`.
+
+Lookup follows that pair in both directions:
+
+```text
+Memory Anchor → MTG → repository entity → RSG → Trace Candidate → Working Memory
+```
+
+1. Start from the Memory Anchor held by the Execution Frontier.
+2. Walk MTG relations to the traces that support, verify, correct, or supersede that frontier.
+3. Read the repository entities on those traces, then walk RSG relations to the current files, symbols, and tests.
+4. Look those entities back up in the projection. The traces that come back are Trace Candidates.
+5. Admit a candidate only after Trace Validation and a State Alignment Check: its recorded repository state still matches, and no later trace has superseded it. A neighboring file or symbol is not, by itself, evidence that still applies.
+
+Only the admitted evidence is restored into Working Memory. Trace bodies that
+leave the active context stay in the Trace Store; Working Memory keeps the
+Memory Anchor and a Trace Synopsis. The presentation of this table and path
+follows the mechanism summary in
+[RPG-ZeroRepo](https://github.com/microsoft/RPG-ZeroRepo). MemTrace uses the
+pair to recover execution evidence, not to generate a repository from a plan.
+
 ## ⚡ Installation
 
 MemTrace requires Python 3.11 or newer.
@@ -73,15 +115,16 @@ source .venv/bin/activate
 python -m pip install -e '.[dev]'
 ```
 
-Install the backend you need:
+Install one harness. Add `multilang` when the repository is not Python; it
+pins the tree-sitter grammars used by the Repository State Graph.
 
 ```bash
-python -m pip install -e '.[codex]'
+python -m pip install -e '.[codex,multilang]'
 # or
-python -m pip install -e '.[mini-swe-agent]'
+python -m pip install -e '.[mini-swe-agent,multilang]'
 ```
 
-The Codex path pins `openai-codex-cli-bin==0.144.4`; the mini path pins
+Codex CLI pins `openai-codex-cli-bin==0.144.4`. mini-swe-agent pins
 `mini-swe-agent==2.4.6`. Credentials are read from protected environment
 variables. Literal keys are never accepted in configuration files or command
 arguments. Start from [.env.example](.env.example) and keep the populated file
@@ -93,41 +136,69 @@ Use a fresh run root for every task. A run root contains the event ledger,
 durable trace state, checkpoints, trajectories, and receipts and is never
 reused across attempts.
 
-### Codex App Server
+Both DeepSWE commands below use the same profile: `deepseek-v4-flash-0731`,
+reasoning effort `high`, a 200,000-token context, native compaction disabled,
+and a budget of 200 execution turns and 14,400 seconds. The credential is
+`MEMTENSOR_DOMESTIC_API_KEY`. Set `HOMY_ENABLE_CODE_GRAPH_SEARCH=1` for either
+harness. The shared profile filename is a compatibility label, not the name of
+the method.
+
+### Codex CLI
+
+Codex CLI sends turns through the App Server. Validate the profile, then start
+a fresh run root:
 
 ```bash
+export MEMTENSOR_DOMESTIC_API_KEY='set-this-locally'
+export HOMY_ENABLE_CODE_GRAPH_SEARCH=1
+
+memtrace validate-config \
+  --config configs/codex/memtensor-deepseek-v4-flash-0731-five-stage.json
+
 memtrace run \
   --harness codex \
-  --model "$MEMTRACE_CODEX_MODEL" \
+  --config configs/codex/memtensor-deepseek-v4-flash-0731-five-stage.json \
+  --model deepseek-v4-flash-0731 \
+  --reasoning-effort high \
   --repository /path/to/repository \
   --task-file task.txt \
   --run-root /tmp/memtrace-codex-run
 ```
 
-For DeepSeek's OpenAI-compatible Responses endpoint, use
-[configs/codex/deepseek.yaml](configs/codex/deepseek.yaml):
+For a non-Python repository, record the pre-run commit and add
+`--multilang-plan`:
 
 ```bash
-export DEEPSEEK_API_KEY='set-this-locally'
-export MEMTRACE_CODEX_MODEL='deepseek-flash'
+export HOMY_MULTILANG_BASE_COMMIT="$(git -C /path/to/repository rev-parse HEAD)"
 
 memtrace run \
   --harness codex \
-  --config configs/codex/deepseek.yaml \
-  --model "$MEMTRACE_CODEX_MODEL" \
+  --multilang-plan \
+  --config configs/codex/memtensor-deepseek-v4-flash-0731-five-stage.json \
+  --model deepseek-v4-flash-0731 \
+  --reasoning-effort high \
   --repository /path/to/repository \
   --task-file task.txt \
-  --run-root /tmp/memtrace-codex-deepseek
+  --run-root /tmp/memtrace-codex-run
 ```
+
+[configs/codex/deepseek.yaml](configs/codex/deepseek.yaml) is a separate example
+for DeepSeek's public Responses endpoint. It is not the DeepSWE profile.
 
 ### mini-swe-agent 2.4.6
 
-DeepSWE uses the five-stage runtime. The command below plans once, then runs
-trace persistence, semantic memory, recall, context replacement, and the
-repository graph through mini-swe-agent 2.4.6:
+mini-swe-agent plans once, then executes through the same Trace Store, MTG,
+RSG, Trace Recall, and Working Memory. Do not pass `--multilang-plan`. Inside
+a container, set `LITELLM_LOCAL_MODEL_COST_MAP=True` so model metadata is read
+locally.
 
 ```bash
 export MEMTENSOR_DOMESTIC_API_KEY='set-this-locally'
+export HOMY_ENABLE_CODE_GRAPH_SEARCH=1
+export LITELLM_LOCAL_MODEL_COST_MAP=True
+
+memtrace validate-config \
+  --config configs/mini_swe_agent/memtensor-deepseek-v4-flash-0731-five-stage.json
 
 memtrace run \
   --harness mini_swe_agent \
@@ -139,8 +210,13 @@ memtrace run \
   --run-root /tmp/memtrace-mini-run
 ```
 
-The profile fixes the model context at 200,000 tokens, disables native
-compaction, and bounds the run at 200 execution turns and 14,400 seconds.
+For a non-Python repository, set the base commit and keep the same command.
+Do not add `--multilang-plan`:
+
+```bash
+export HOMY_MULTILANG_BASE_COMMIT="$(git -C /path/to/repository rev-parse HEAD)"
+```
+
 See [docs/deepswe-reproduction.md](docs/deepswe-reproduction.md).
 
 The benchmark launchers accept only the shared Harness lifecycle. They do not
@@ -202,8 +278,8 @@ src/memtrace/
 ├── recall/               Trace Recall and validated restoration
 ├── context_runtime/      Working Memory, compaction, checkpoints
 ├── rich_graph/           optional Repository State Graph indexing
-├── harness/codex/        Codex App Server backend
-├── harness/mini_five_stage.py  DeepSWE five-stage mini-swe-agent adapter
+├── harness/codex/        Codex CLI App Server backend
+├── harness/mini_five_stage.py  DeepSWE mini-swe-agent adapter
 ├── harness/mini_swe_agent/  mini-swe-agent 2.4.6 receipt adapter
 └── benchmarks/           shared runner and benchmark bridges
 ```

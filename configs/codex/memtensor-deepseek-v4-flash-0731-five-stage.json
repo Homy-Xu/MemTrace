@@ -1,0 +1,66 @@
+{
+  "schema_version": 2,
+  "provider": {
+    "id": "memtensor_deepseek",
+    "name": "MemTensor DeepSeek",
+    "base_url": "https://api-int.memtensor.cn/v1",
+    "api_key_env": "MEMTENSOR_DOMESTIC_API_KEY",
+    "wire_api": "responses",
+    "model": "deepseek-v4-flash-0731",
+    "model_context_window": 200000,
+    "native_compaction_enabled": false
+  },
+  "stages": {
+    "planning": true,
+    "page_store": true,
+    "semantic_memory": true,
+    "recall": true,
+    "context_runtime": true,
+    "rich_graph": true
+  },
+  "codex_sandbox_mode": "danger-full-access",
+  "page_policy": {
+    "min_tokens": 2048,
+    "target_tokens": 6144,
+    "nominal_max_tokens": 8192,
+    "absolute_max_tokens": 16384
+  },
+  "context_budget": {
+    "model_limit": 200000,
+    "system_overhead": 8000,
+    "tool_schema_tokens": 16000,
+    "output_reserve": 16000,
+    "safety_margin": 8000,
+    "soft_ratio": 0.6,
+    "urgent_ratio": 0.75,
+    "hard_ratio": 0.85
+  },
+  "recall_max_pages": 8,
+  "recall_max_tokens": 8192,
+  "rich_prefetch_budget": 4,
+  "native_compaction_timeout_seconds": 180,
+  "run_budget": {
+    "max_execution_turns": 200,
+    "wall_clock_seconds": 14400
+  },
+  "acceptance_budgets": {
+    "weak_progress": 4,
+    "no_progress": 2,
+    "semantic_review_rounds": 2,
+    "unclaimed_boundaries": 3
+  },
+  "engagement": {
+    "mode": "full",
+    "escalate_on_provider_pressure": true,
+    "escalate_on_epoch": true,
+    "escalate_on_verification_failure": true,
+    "retain_predecessor_milestones": 1
+  },
+  "redaction_env_vars": [
+    "MEMTENSOR_DOMESTIC_API_KEY",
+    "MEMTENSOR_API_KEY",
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GITHUB_TOKEN"
+  ]
+}
