@@ -1,11 +1,10 @@
 # DeepSWE reproduction with mini-swe-agent 2.4.6
 
 This document describes the mini-swe-agent adapter imported from the
-author-provided `98e4e98` archive, reported as tested on A2. The source archive
-and a new official benchmark reproduction have separate provenance; see
-[validation status](reproducibility.md#validation-status). Private task
-prompts, cluster paths, scheduler files, raw trajectories, and credentials are
-excluded.
+author-provided `98e4e98` archive and the public Docker canary. The source
+archive and each benchmark receipt have separate provenance; see [validation
+status](reproducibility.md#validation-status). Private task prompts, cluster
+paths, scheduler files, raw trajectories, and credentials are excluded.
 
 ## Install
 
@@ -63,6 +62,13 @@ The original trajectory remains the usage source.
 These are the checked-in archive defaults, not a claim that this profile
 matches every paper experiment's budget. A launcher must enforce its own hard
 deadline, including blocked provider requests and evaluator execution.
+
+The A2 canary used the lower-level `MiniSweAgentBackend` with
+`environment_class: docker`, `cwd: /app`, the pinned task image, and
+`BenchmarkRunner`. It is the containerized path corresponding to the historical
+mini-swe-agent experiment. The `memtrace run` command above uses the canonical
+Memory Trace coordinator and its local command environment; it requires the
+launcher to prepare and isolate the task environment first.
 
 ## Prepare the task environment
 

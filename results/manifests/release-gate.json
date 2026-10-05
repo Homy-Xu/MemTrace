@@ -14,14 +14,26 @@
     "installed_receipt": "verified-installed-package"
   },
   "real_smoke": {
-    "status": "NOT_VALIDATED",
-    "reason": "The archive is author-reported as tested on A2. A fresh publication check was invalidated by host environment mismatch and exposure of upstream Git refs; it produced no official score.",
+    "status": "CANARY_PASSED",
+    "reason": "A single clean Docker canary completed generation and the official task evaluator. The canonical local-environment Memory Trace coordinator and the full 113-task campaign are not claimed.",
     "scope": "mini-swe-agent-2.4.6+DeepSWE",
-    "checked_commit": "3e7174dcce19be3490edfc24237e01364d7fa2f7",
-    "api_calls_observed": 186,
-    "evaluation_status": "NOT_RUN",
-    "official_score": null,
-    "score_eligible": false
+    "checked_commit": "d2de921d47e40e36d529340308f3dea8f1fb6131",
+    "task_id": "adaptix-name-mapping-aliases",
+    "generation_status": "COMPLETED",
+    "evaluation_status": "COMPLETED",
+    "official_reward": 1,
+    "f2p": "44/44",
+    "p2p": "2738/2738",
+    "api_calls": 193,
+    "input_tokens": 22583682,
+    "output_tokens": 104887,
+    "total_tokens": 22688569,
+    "wall_clock_seconds": 1669.102230542805,
+    "provider_cost": null,
+    "cost_available": false,
+    "integration": "MiniSweAgentBackend+BenchmarkRunner+Docker",
+    "memory_runtime_validation": false,
+    "score_eligible": true
   },
   "source_archive_commit": "98e4e9860a6ea7dd0dfaf1f7982943be3ee7cad7",
   "source_archive_parent": "d77a1fb85f2638853968c3e73da39d9a842ab682"

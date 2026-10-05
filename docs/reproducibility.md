@@ -21,8 +21,8 @@ and whether a provider smoke was available at build time.
 ## Validation status
 
 The author-provided `98e4e98` archive is reported as tested on A2 with
-mini-swe-agent 2.4.6. Its original official evaluator archive is not bundled
-with this publication. This provenance is distinct from a new reproduction.
+mini-swe-agent 2.4.6. Its original full campaign archive is not bundled with
+this publication. This provenance is distinct from the canary below.
 
 A fresh check of publication commit `3e7174d` reached 186 MemTensor API calls
 but was stopped and excluded from scoring. Its external launcher ran
@@ -33,12 +33,22 @@ validation failure, not a measured model-quality result. The earlier request
 serialization errors did not recur in that check, which is narrower evidence
 than a successful end-to-end benchmark run.
 
-The release therefore has offline validation but no newly established isolated
-end-to-end reproduction. A new run must use the task's prepared environment,
-benchmark-approved repository history, and separate evaluator. Bind its
-receipts to the source digest, wheel SHA, task, and image before reporting a
-result. Private run roots, scheduler configuration, credentials, raw
-trajectories, and evaluator workspaces remain outside this repository.
+The corrected Docker canary for publication commit `d2de921` used a clean
+`a691069f` checkout, the pinned task image, mini-swe-agent 2.4.6, and the
+MemTensor endpoint. Generation completed with 193 API calls in 1669.10 seconds;
+the separate official evaluator reported reward 1, F2P 44/44, and P2P
+2738/2738. The patch was recovered from the original container before it was
+removed, and score-only evaluation made no additional model calls. This is a
+valid single-task Docker canary for the generic `MiniSweAgentBackend +
+BenchmarkRunner` integration. It is not a 113-task DeepSWE campaign and does
+not validate the canonical local-environment `memtrace run` path's full memory
+runtime. Provider cost was unavailable and is recorded as `null`.
+
+A new full run must use the task's prepared environment, benchmark-approved
+repository history, and separate evaluator. Bind its receipts to the source
+digest, wheel SHA, task, and image before reporting a result. Private run roots,
+scheduler configuration, credentials, raw trajectories, and evaluator
+workspaces remain outside this repository.
 
 ## Receipt requirements
 

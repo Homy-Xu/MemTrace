@@ -28,9 +28,12 @@ This repository contains two harness boundaries:
   author-provided `98e4e98` archive, reported as tested on A2. It records
   model/tool events and token usage through the shared memory runtime.
 
-The archive's reported A2 run and a new reproduction from this repository are
-separate evidence. Offline checks pass; a fresh isolated end-to-end run with an
-official evaluator receipt has not yet been established for this publication.
+The archive's reported A2 run and each public reproduction are separate
+evidence. A Docker canary for this publication completed the official task
+evaluator with reward 1 (F2P 44/44 and P2P 2738/2738) through the generic
+`MiniSweAgentBackend + BenchmarkRunner` path. The canonical `memtrace run`
+entry point remains a local command environment and needs a prepared task
+launcher; that full memory-runtime path is not implied by the canary.
 See [validation status](docs/reproducibility.md#validation-status).
 
 The mini-swe-agent adapter is intentionally published under
@@ -172,7 +175,8 @@ supply the same Harness lifecycle:
 The DeepSWE CLI connects
 `memtrace.harness.mini_swe_agent.MiniSweAgentHarnessAdapter` to `RunCoordinator`.
 `MiniSweAgentBackend` is a separate, lower-level trajectory bridge; using it
-alone does not run the complete memory runtime. Do not reuse a mutable
+alone does not run the complete memory runtime. The A2 Docker canary used this
+bridge with `BenchmarkRunner` and a mini-swe-agent Docker environment. Do not reuse a mutable
 workspace, provider session, container identity, or receipt directory across
 attempts. Keep evaluator tests and later solution commits outside the
 generation environment. The adapter's local environment is not a sandbox.
