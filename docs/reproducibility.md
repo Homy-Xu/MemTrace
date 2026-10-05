@@ -1,49 +1,53 @@
 # Reproducibility
 
-## Release checks
+## Public release checks
 
-The release gate installs a clean Python 3.11 environment, runs the core
-contract tests, and executes one real task through each harness and benchmark
-combination:
+This release publishes the mini-swe-agent 2.4.6 DeepSWE adapter. The offline
+gate covers the shared runtime, both Harness contracts, the MemTensor request
+sanitizer, receipt serialization, and the DeepSWE profile:
 
-| Harness | SWE-Milestone | DeepSWE | SWE-EVO |
-| --- | --- | --- | --- |
-| Codex App Server | smoke | smoke | smoke |
-| mini-swe-agent 2.4.6 | smoke | smoke | smoke |
+```bash
+python -m compileall -q src
+python -m pytest tests/unit tests/contract tests/integration
+python -m memtrace --help
+python -m memtrace.benchmarks.mini --help
+```
 
-Each smoke uses a new run root, repository checkout, container identity,
-provider session, and receipt path. The DeepSWE mini-swe-agent reference run
-uses version 2.4.6 through the five-stage runtime: `deepseek-v4-flash-0731`,
-a 200,000-token context window, native compaction disabled, 200 execution
-turns, and a 14,400-second wall-clock budget. A smoke is complete only when generation,
-official evaluation, score publication, usage accounting, and cleanup all have
-receipts. A launcher, provider, container, evaluator, or network failure is
-recorded as `INFRA_OR_AGENT_FAILURE` and is never converted into a model score.
+A real provider run requires a protected MemTensor credential and the external
+DeepSWE image, task manifest, and evaluator. A public checkout cannot claim an
+official score from local tests. The release manifest records the offline gate
+and whether a provider smoke was available at build time.
 
-The public release manifest records whether each combination is complete or
-blocked. A blocked smoke is an explicit reproducibility status, not an inferred
-benchmark result.
+## A2 validation boundary
 
-## Result provenance
+The uploaded source line was exercised on A2 with mini-swe-agent 2.4.6 and the
+MemTensor Responses endpoint. Private run roots, image references, scheduler
+configuration, credentials, raw trajectories, and evaluator workspaces remain
+outside this repository. Re-run from a clean checkout and bind the resulting
+receipt to the exact source digest and wheel SHA before reporting a result.
 
-`results/manifests/` contains only redacted metadata. Each row identifies the
-benchmark, task, harness and version, source digest, wheel digest, official
-score when available, F2P/P2P counts, wall-clock time, token usage, cost,
-generation status, evaluation status, and failure classification. It points to
-the official campaign receipt outside the public repository.
+## Receipt requirements
 
-Cross-campaign summaries retain their component campaigns and are labeled as
-summaries. A score-only regrade, rerun, complete campaign, infrastructure
-failure, and model-quality failure remain distinct provenance classes.
+Every task receipt should contain:
 
-## Reproduction boundary
+- generation status and patch/trajectory identity;
+- evaluation status and official score, when the external evaluator publishes it;
+- F2P/P2P counts when the benchmark defines them;
+- API calls, input/output/total tokens, provider cost or `null` with
+  `cost_available=false`, and wall-clock time;
+- Harness version, source digest, wheel SHA, and model/provider identity;
+- failure classification.
 
-Full task datasets, hidden tests, private prompts, provider configuration,
-cluster paths, raw trajectories, Docker state, and evaluator workspaces are
-intentionally excluded. Reproduction requires the corresponding external
-benchmark assets and an authorized provider credential supplied through the
-protected environment.
+Provider/auth, image/container, context-limit, agent-stall, evaluator,
+infrastructure, and model-quality failures are separate classes. A process
+exit of zero without an evaluator receipt is not a score. A reward of zero
+with complete generation and evaluation is model-quality evidence; a provider
+or container failure is not.
 
-Use a fresh run root and independent repository checkout for each attempt. Do
-not reuse a receipt directory, container identity, provider session, or mutable
-workspace across attempts.
+## Benchmark boundary
+
+The mini-swe-agent profile is for DeepSWE. SWE-Milestone has a different
+repository-stream contract and milestone-level evaluator; see
+[benchmark-scope.md](benchmark-scope.md) before attempting that benchmark.
+Historical result manifests remain provenance records and are not silently
+combined into a new campaign.

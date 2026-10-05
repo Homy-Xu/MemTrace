@@ -6,10 +6,11 @@ import pytest
 
 from memtrace.cli import main
 from memtrace.config import load_config
-from memtrace.harness.mini_five_stage import (
+from memtrace.harness.mini_swe_agent.deepswe import (
     MiniSweAgentHarnessAdapter,
     sanitize_mini_messages_for_api,
 )
+from memtrace.harness.mini_five_stage import MiniSweAgentHarnessAdapter as LegacyMiniAdapter
 
 
 class _FakeModel:
@@ -36,7 +37,7 @@ class _FakeAgent:
 def test_deepswe_five_stage_profile_matches_best_campaign() -> None:
     root = Path(__file__).parents[2]
     config = load_config(
-        root / "configs/mini_swe_agent/memtensor-deepseek-v4-flash-0731-five-stage.json"
+        root / "configs/mini_swe_agent/memtensor-deepseek-v4-flash-0731.json"
     )
     assert config.provider.model == "deepseek-v4-flash-0731"
     assert config.provider.api_key_env == "MEMTENSOR_DOMESTIC_API_KEY"
@@ -75,7 +76,7 @@ def test_mini_five_stage_projects_one_behavioral_plan(tmp_path: Path) -> None:
     (repository / "README.md").write_text("fixture\n", encoding="utf-8")
     config = load_config(
         Path(__file__).parents[2]
-        / "configs/mini_swe_agent/memtensor-deepseek-v4-flash-0731-five-stage.json"
+        / "configs/mini_swe_agent/memtensor-deepseek-v4-flash-0731.json"
     )
     adapter = MiniSweAgentHarnessAdapter(
         repository_path=repository,
@@ -112,6 +113,10 @@ def test_mini_five_stage_projects_one_behavioral_plan(tmp_path: Path) -> None:
     assert driver.capabilities().supports_context_replacement is True
 
 
+def test_legacy_mini_import_remains_a_compatibility_alias() -> None:
+    assert LegacyMiniAdapter is MiniSweAgentHarnessAdapter
+
+
 def test_mini_harness_rejects_codex_only_flags(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     repository = tmp_path / "repo"
     repository.mkdir()
@@ -119,7 +124,7 @@ def test_mini_harness_rejects_codex_only_flags(tmp_path: Path, capsys: pytest.Ca
     task.write_text("Fix the reported failure.\n", encoding="utf-8")
     config = (
         Path(__file__).parents[2]
-        / "configs/mini_swe_agent/memtensor-deepseek-v4-flash-0731-five-stage.json"
+        / "configs/mini_swe_agent/memtensor-deepseek-v4-flash-0731.json"
     )
     code = main(
         [

@@ -26,7 +26,7 @@ def _parser() -> argparse.ArgumentParser:
     subcommands = parser.add_subparsers(dest="command", required=True)
     run = subcommands.add_parser(
         "run",
-        help="run with Codex App Server, mini-swe-agent five-stage, or an offline scenario",
+        help="run with Codex App Server, mini-swe-agent, or an offline scenario",
     )
     run.add_argument("--scenario", type=Path)
     task_source = run.add_mutually_exclusive_group()
@@ -422,7 +422,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                     # retain Python AST/ReferenceDirectory and normalizer.
                     adapter_class = SweMilestoneCodexHarnessAdapter
                 if harness == "mini_swe_agent":
-                    from .harness.mini_five_stage import MiniSweAgentHarnessAdapter
+                    from .harness.mini_swe_agent import MiniSweAgentHarnessAdapter
 
                     harness_adapter = MiniSweAgentHarnessAdapter(
                         repository_path=repository,

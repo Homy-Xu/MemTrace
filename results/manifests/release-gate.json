@@ -1,28 +1,23 @@
 {
   "schema": "memtrace/release-gate@1",
   "package_version": "0.1.0",
-  "source_digest": "704212f27f6adfc639783b497831961e9dffb5c406a7697f16d94cbf57d695c9",
-  "wheel_sha256": "4e2310b1b60e940bc213e3890c2b4a96bb20af379c679d172d3e6759b0fdfaeb",
+  "source_digest": "0375e0d1102d2a0bc6fee293123b3a7ca6b8a8f88d94671626a60cdc35e9036a",
+  "wheel_sha256": "8dbc2971bf4528a1403bdbe6dd405da8e0d75b84a8aef08511ac08d37dc840e9",
   "offline": {
     "pytest": {
       "status": "PASSED",
-      "tests": 91
+      "tests": 92
     },
     "compileall": "PASSED",
-    "ruff_fatal": "PASSED",
+    "ruff_fatal": "NOT_RUN",
     "clean_install": "PASSED",
     "installed_receipt": "verified-installed-package"
   },
   "real_smoke": {
-    "status": "BLOCKED",
-    "reason": "No provider model or API credential was present in the release environment.",
-    "combinations": [
-      "codex+swe-milestone",
-      "codex+deepswe",
-      "codex+swe-evo",
-      "mini-swe-agent-2.4.6+swe-milestone",
-      "mini-swe-agent-2.4.6+deepswe",
-      "mini-swe-agent-2.4.6+swe-evo"
-    ]
-  }
+    "status": "NOT_PUBLISHED",
+    "reason": "The A2 provider run is represented by private receipts; this public tree contains no credential, task image, raw trajectory, or official evaluator receipt.",
+    "scope": "mini-swe-agent-2.4.6+DeepSWE"
+  },
+  "source_archive_commit": "98e4e9860a6ea7dd0dfaf1f7982943be3ee7cad7",
+  "source_archive_parent": "d77a1fb85f2638853968c3e73da39d9a842ab682"
 }
