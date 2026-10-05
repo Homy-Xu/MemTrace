@@ -7,8 +7,13 @@ trajectories, and credentials.
 
 The runtime seals Memory Traces into the Trace Store, links them in the Memory
 Trace Graph (MTG), projects them onto the Repository State Graph (RSG), and
-restores validated evidence into Working Memory. Context replacement, Trace
+restores validated evidence into Working Memory. Context Refresh, Trace
 Recall, and Execution Milestone acceptance stay inside the runtime.
+
+This document covers the DeepSWE task boundary. It does not claim a
+SWE-Milestone reproduction: that benchmark evaluates ordered milestone IDs and
+attempts within a repository stream, with a different official evaluator and
+receipt contract.
 
 ## Shared profile
 

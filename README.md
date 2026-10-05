@@ -5,7 +5,7 @@
     <a href="https://github.com/Homy-Xu/MemTrace/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-2ea44f?style=flat-square" alt="Apache 2.0 license"></a>
     <img src="https://img.shields.io/badge/python-3.11%2B-3776ab?style=flat-square&logo=python&logoColor=white" alt="Python 3.11 or newer">
     <img src="https://img.shields.io/badge/mini--swe--agent-2.4.6-4b8bbe?style=flat-square" alt="mini-swe-agent 2.4.6">
-    <img src="https://img.shields.io/badge/benchmarks-SWE--Milestone%20%7C%20DeepSWE%20%7C%20SWE--EVO-6f42c1?style=flat-square" alt="Supported benchmarks">
+    <img src="https://img.shields.io/badge/adapter-DeepSWE-6f42c1?style=flat-square" alt="DeepSWE adapter">
   </p>
 </div>
 
@@ -20,6 +20,10 @@ and keeps only the evidence needed for the next action in **Working Memory**.
 Historical evidence is restored only after it has been aligned with the current
 task and repository state.
 
+This release publishes the DeepSWE entry points from the A2-validated source
+archive. It does not claim a completed SWE-Milestone or SWE-EVO reproduction;
+those benchmarks require their own task and evaluator contracts.
+
 The runtime exposes the same provider-neutral lifecycle to two backends:
 
 - **Codex CLI** — native JSONL events, planning, workspace revisions,
@@ -33,6 +37,7 @@ The runtime exposes the same provider-neutral lifecycle to two backends:
 - [How the modules work](#how-the-modules-work)
 - [Installation](#-installation)
 - [Run a Harness](#-run-a-harness)
+- [Benchmark scope](#-benchmark-scope)
 - [Benchmark adapters](#-benchmark-adapters)
 - [Receipts and reproducibility](#-receipts-and-reproducibility)
 - [Terminology](#-terminology)
@@ -223,17 +228,28 @@ The benchmark launchers accept only the shared Harness lifecycle. They do not
 silently substitute a standalone runner or reuse another task's workspace,
 container, provider socket, label, or receipt.
 
+## 🧭 Benchmark scope
+
+The public commands in this release target **DeepSWE**. A DeepSWE task is
+launched as an independent repository task with its own checkout, run root,
+provider session, trajectory, patch, and evaluator receipt.
+
+**SWE-Milestone** has a different unit of work. One repository stream contains
+ordered milestone IDs, attempt numbers, repository-state transitions, and a
+milestone-level official evaluator. Its `repository-stream`, host verifier, and
+attempt receipt rules must be adapted together; the mini-swe-agent entry point
+published here does not make that claim. **SWE-EVO** likewise remains outside
+the validated scope of this release.
+
 ## 🧪 Benchmark adapters
 
-The public adapters keep benchmark-specific concerns outside the memory
-runtime:
+The source tree keeps benchmark-specific concerns outside the memory runtime:
 
-- **SWE-Milestone** — repository streams, official evaluator handoff, and
-  immutable attempt receipts.
 - **DeepSWE** — multilingual task/image bridges, provider isolation, and
   infrastructure-failure classification.
-- **SWE-EVO** — version-jump tasks, continuous Execution Milestones,
-  host-managed verification, and fixture-contamination checks.
+
+SWE-Milestone and SWE-EVO adapters are retained as compatibility and research
+code. They are not release smoke results or new benchmark claims here.
 
 Full benchmark datasets, hidden tests, private prompts, cluster launch scripts,
 and raw trajectories remain outside this repository.
@@ -273,20 +289,20 @@ remain available for compatibility.
 src/memtrace/
 ├── core runtime contracts and persistence
 ├── planning/             task and Execution Milestone state
-├── page_store/           compatibility implementation for the Trace Store
 ├── semantic_memory/      trace localization and repository alignment
 ├── recall/               Trace Recall and validated restoration
 ├── context_runtime/      Working Memory, compaction, checkpoints
 ├── rich_graph/           optional Repository State Graph indexing
 ├── harness/codex/        Codex CLI App Server backend
-├── harness/mini_five_stage.py  DeepSWE mini-swe-agent adapter
 ├── harness/mini_swe_agent/  mini-swe-agent 2.4.6 receipt adapter
 └── benchmarks/           shared runner and benchmark bridges
 ```
 
-The source-level `page_store` name is retained for compatibility with existing
-integrations; the public concept is **Trace Store**. The README structure
-follows the concise research-code presentation used by
+Historical identifiers such as `page_store`, `stages`, and `rich_graph` remain
+in schemas and source paths for compatibility. They correspond to the public
+concepts Trace Store, runtime modules, and the Repository State Graph; they are
+not additional method components. The README structure follows the concise
+research-code presentation used by
 [RepoGraph](https://github.com/ozyyshr/RepoGraph) and
 [Paper2Code](https://github.com/going-doer/Paper2Code). The paired
 representation and reconstruction boundary is inspired by

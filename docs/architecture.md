@@ -77,10 +77,10 @@ Cross-Context Recovery.
 
 Codex exposes native planning, incremental plan updates, thread recovery, and
 provider capabilities when supported by the pinned App Server. DeepSWE launches
-mini-swe-agent 2.4.6 through the same five-stage coordinator. That driver
-exposes plan mode, execution turns, trajectory usage, and context replacement.
-It reports native thread resume and native compaction as unavailable. The
-runtime records those capabilities instead of fabricating parity.
+mini-swe-agent 2.4.6 through the same Memory Trace runtime. That driver exposes
+plan mode, execution turns, trajectory usage, and Context Refresh. It reports
+native thread resume and native compaction as unavailable. The runtime records
+those capabilities instead of fabricating parity.
 
 The event ledger is append-only. Each event carries a run, branch, revision,
 source event, provider method, normalized payload, and a raw-provider summary.
@@ -90,3 +90,16 @@ host paths, raw trajectories, and hidden prompts are redacted or excluded.
 Stable source-level compatibility names remain in the implementation and
 serialized schemas. The public vocabulary is defined in
 [terminology.md](terminology.md).
+
+## Benchmark scope
+
+This release documents and validates the DeepSWE task boundary. Each task owns
+an independent checkout, provider session, run root, trajectory, patch, and
+official evaluator receipt.
+
+SWE-Milestone uses a repository stream with ordered milestone IDs, attempt
+numbers, repository-state transitions, host-managed verification, and
+milestone-level scoring. Those boundaries are not interchangeable with a
+single DeepSWE task, so this release does not claim a completed SWE-Milestone
+mini-swe-agent adapter. SWE-EVO is outside the validated release scope as
+well.
