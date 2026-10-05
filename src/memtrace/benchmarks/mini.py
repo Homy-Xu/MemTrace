@@ -1,4 +1,4 @@
-"""DeepSWE entry for the mini-swe-agent 2.4.6 Memory Trace runtime."""
+"""DeepSWE entry that runs mini-swe-agent 2.4.6 through the five-stage runtime."""
 from __future__ import annotations
 
 import argparse
@@ -11,7 +11,7 @@ _DEFAULT_CONFIG = (
     Path(__file__).resolve().parents[3]
     / "configs"
     / "mini_swe_agent"
-    / "memtensor-deepseek-v4-flash-0731.json"
+    / "memtensor-deepseek-v4-flash-0731-five-stage.json"
 )
 
 
@@ -28,7 +28,7 @@ def main(argv: list[str] | None = None) -> int:
         "--config",
         type=Path,
         default=_DEFAULT_CONFIG,
-        help="MemTrace runtime JSON configuration",
+        help="five-stage runtime JSON configuration",
     )
     parser.add_argument(
         "--reasoning-effort",
@@ -40,7 +40,7 @@ def main(argv: list[str] | None = None) -> int:
     if not args.model.strip():
         parser.error("--model or MEMTRACE_MINISWE_MODEL is required")
     if not args.config.is_file():
-        parser.error(f"runtime config not found: {args.config}")
+        parser.error(f"five-stage config not found: {args.config}")
     del args.benchmark, args.task_id
     return cli_main(
         [

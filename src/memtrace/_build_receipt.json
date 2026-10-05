@@ -2,6 +2,6 @@
   "schema": "memtrace/build-receipt@1",
   "distribution": "memtrace",
   "version": "0.1.0",
-  "source_digest": "0375e0d1102d2a0bc6fee293123b3a7ca6b8a8f88d94671626a60cdc35e9036a",
-  "build_id": "build_ee3e49404a36df80bbcbb45597b853c6"
+  "source_digest": "704212f27f6adfc639783b497831961e9dffb5c406a7697f16d94cbf57d695c9",
+  "build_id": "build_36688f53bc0e9a5e239f6217a50baa71"
 }

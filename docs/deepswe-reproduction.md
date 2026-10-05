@@ -1,161 +1,115 @@
-# DeepSWE reproduction with mini-swe-agent 2.4.6
+# DeepSWE reproduction
 
-This document describes the mini-swe-agent adapter imported from the
-author-provided `98e4e98` archive and the public Docker canary. The source
-archive and each benchmark receipt have separate provenance; see [validation
-status](reproducibility.md#validation-status). Private task prompts, cluster
-paths, scheduler files, raw trajectories, and credentials are excluded.
+This document describes the public DeepSWE path for Codex CLI and
+mini-swe-agent 2.4.6. Both harnesses use the same Memory Trace runtime. It
+excludes private task prompts, cluster paths, scheduler files, Docker sockets,
+trajectories, and credentials.
 
-## Install
+The runtime seals Memory Traces into the Trace Store, links them in the Memory
+Trace Graph (MTG), projects them onto the Repository State Graph (RSG), and
+restores validated evidence into Working Memory. Context replacement, Trace
+Recall, and Execution Milestone acceptance stay inside the runtime.
+
+## Shared profile
+
+Both profiles fix the same budget:
+
+| Setting | Value |
+| --- | --- |
+| Model | `deepseek-v4-flash-0731` |
+| Credential variable | `MEMTENSOR_DOMESTIC_API_KEY` |
+| Endpoint | `https://api-int.memtensor.cn/v1` |
+| Wire API | Responses |
+| Reasoning effort | `high` |
+| Model context | 200,000 tokens |
+| Native compaction | disabled |
+| Modules | Planning, Trace Store, MTG, RSG, Trace Recall, Working Memory |
+| Trace size | 2048 / 6144 / 8192 / 16384 tokens |
+| Trace Recall | 8 traces, 8192 tokens |
+| Execution budget | 200 turns, 14400 seconds |
+| Acceptance | weak progress 4, no progress 2, semantic review rounds 2, unclaimed boundaries 3 |
+| Engagement | `full` |
+
+`no_progress` is the Execution Milestone acceptance budget. Do not put the key
+in a shell history, task file, receipt, or repository.
+
+```bash
+export MEMTENSOR_DOMESTIC_API_KEY='(read from a protected secret store)'
+export HOMY_ENABLE_CODE_GRAPH_SEARCH=1
+```
+
+For a non-Python repository, record the commit that exists before the agent
+starts:
+
+```bash
+export HOMY_MULTILANG_BASE_COMMIT="$(git -C /path/to/clean/checkout rev-parse HEAD)"
+```
+
+## Codex CLI
+
+Use Python 3.11 or newer:
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-python -m pip install -e '.[dev,mini-swe-agent]'
+python -m pip install -e '.[dev,codex,multilang]'
 ```
 
-The package pins `mini-swe-agent==2.4.6`. Verify the installed version before a
-paid run:
+Codex CLI talks to the model through the App Server. Install
+`openai-codex-cli-bin==0.144.4` with the `codex` extra. Add `--multilang-plan`
+only for a non-Python repository.
 
 ```bash
-python - <<'PY'
-import minisweagent
-assert minisweagent.__version__ == '2.4.6'
-print(minisweagent.__version__)
-PY
+memtrace validate-config \
+  --config configs/codex/memtensor-deepseek-v4-flash-0731-five-stage.json
+
+memtrace run \
+  --harness codex \
+  --config configs/codex/memtensor-deepseek-v4-flash-0731-five-stage.json \
+  --repository /path/to/clean/checkout \
+  --task-file /path/to/task.txt \
+  --run-root /path/to/runs/deepswe-codex \
+  --model deepseek-v4-flash-0731 \
+  --reasoning-effort high
 ```
 
-## Provider profile
+[configs/codex/deepseek.yaml](../configs/codex/deepseek.yaml) points at
+DeepSeek's public endpoint and is not this profile.
 
-Use a protected environment variable for the MemTensor credential:
+## mini-swe-agent 2.4.6
 
 ```bash
-export MEMTENSOR_DOMESTIC_API_KEY='read-from-your-protected-secret-store'
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[dev,mini-swe-agent,multilang]'
 ```
 
-The public profile is
-`configs/mini_swe_agent/memtensor-deepseek-v4-flash-0731.json`:
-
-| Setting | Value |
-| --- | --- |
-| Harness | mini-swe-agent 2.4.6 |
-| Model | `deepseek-v4-flash-0731` |
-| Endpoint | `https://api-int.memtensor.cn/v1` |
-| Wire API | Responses |
-| Credential variable | `MEMTENSOR_DOMESTIC_API_KEY` |
-| Model context | 200,000 tokens |
-| Provider compaction | disabled; Context Refresh is runtime-owned |
-| mini-swe-agent numeric step limit | `0` (disabled) |
-| Coordinator execution-turn budget | `200`; a runtime turn can contain multiple model/tool calls |
-| Coordinator wall-clock budget | `14400` seconds (four hours) |
-| Single shell-command timeout | `1800` seconds |
-| Memory runtime | Planning, Memory Trace formation, Trace Recall, Working Memory, MTG/RSG alignment |
-| Acceptance budget | weak progress 4; no progress 2; semantic review 2; unclaimed boundaries 3 |
-| Engagement | full |
-
-The gateway adapter sanitizes the replayed request before every call. It
-normalizes message IDs and input content, converts unsupported reasoning items
-to assistant text, removes unsupported function-call fields, strips replayed
-Responses envelopes, and appends a diagnostic output for an unmatched call.
-The original trajectory remains the usage source.
-
-These are the checked-in archive defaults, not a claim that this profile
-matches every paper experiment's budget. A launcher must enforce its own hard
-deadline, including blocked provider requests and evaluator execution.
-
-The A2 canary used the lower-level `MiniSweAgentBackend` with
-`environment_class: docker`, `cwd: /app`, the pinned task image, and
-`BenchmarkRunner`. It is the containerized path corresponding to the historical
-mini-swe-agent experiment. The `memtrace run` command above uses the canonical
-Memory Trace coordinator and its local command environment; it requires the
-launcher to prepare and isolate the task environment first.
-
-## Prepare the task environment
-
-The adapter executes commands locally through mini-swe-agent's
-`LocalEnvironment`. Run the CLI **inside** the task's prepared environment;
-passing `--repository` does not load an image, create a container, install
-dependencies, or restrict filesystem access.
-
-The external launcher is responsible for the following:
-
-- Lock the task ID, task text, baseline commit, image digest, and source digest.
-- Provide the benchmark's dependencies and test tools before generation.
-- Expose only the task workspace and permitted assets. Later upstream solution
-  commits, other task workspaces, and hidden evaluator tests must be
-  inaccessible.
-- Use a separate writable run root and a hard task deadline. Do not expose a
-  host Docker socket to the agent.
-- Export the patch and run the official evaluator in a separate environment.
-
-Use the task's declared working directory (for example `/app` or `/testbed`).
-Installing MemTrace in a launcher environment does not install the task's own
-dependencies in its command environment.
-
-## Run one clean task
+mini-swe-agent plans once, then uses the same Trace Store, MTG, RSG, and
+Working Memory. Do not pass `--multilang-plan`. In a container, read model
+metadata locally:
 
 ```bash
+export LITELLM_LOCAL_MODEL_COST_MAP=True
+
+memtrace validate-config \
+  --config configs/mini_swe_agent/memtensor-deepseek-v4-flash-0731-five-stage.json
+
 memtrace run \
   --harness mini_swe_agent \
-  --config configs/mini_swe_agent/memtensor-deepseek-v4-flash-0731.json \
-  --model deepseek-v4-flash-0731 \
-  --reasoning-effort high \
+  --config configs/mini_swe_agent/memtensor-deepseek-v4-flash-0731-five-stage.json \
   --repository /path/to/clean/checkout \
-  --task-file /path/to/deepswe-task.txt \
-  --run-root /path/to/runs/deepswe/task-id
+  --task-file /path/to/task.txt \
+  --run-root /path/to/runs/deepswe-mini \
+  --model deepseek-v4-flash-0731 \
+  --reasoning-effort high
 ```
 
-Or use the benchmark module:
+`python -m memtrace.benchmarks.mini` calls the same command. Official scoring
+stays with the external DeepSWE evaluator. A durable runtime result is a
+successful process handoff even when the task verdict is incomplete, so the
+evaluator can inspect the same workspace.
 
-```bash
-python -m memtrace.benchmarks.mini \
-  --model deepseek-v4-flash-0731 \
-  --config configs/mini_swe_agent/memtensor-deepseek-v4-flash-0731.json \
-  --repository /path/to/clean/checkout \
-  --task-file /path/to/deepswe-task.txt \
-  --run-root /path/to/runs/deepswe/task-id
-```
-
-Each task needs a new checkout and run root. Runtime artifacts include
-`v2-state.sqlite3`, `rich-graph.sqlite3`, `workspace-revisions/`,
-`mini-swe-agent/trajectory.json`, archived context epochs, and `result.json`
-when the coordinator finishes. The benchmark launcher must export the patch
-and associate it with the exact task and evaluator result. Legacy
-`--benchmark` and `--task-id` arguments are accepted by the module but ignored;
-store those identities in the launcher's manifest.
-
-## Receipt interpretation
-
-The runtime result is independent from the official evaluation receipt. The
-following fields are requirements for the launcher's combined manifest, not
-fields guaranteed to be emitted together by this CLI:
-
-- `generation_status` describes whether the Harness produced a terminal patch
-  or a classified runtime failure.
-- `evaluation_status` and `official_score` come only from the external DeepSWE
-  evaluator.
-- `input_tokens`, `output_tokens`, `total_tokens`, `api_calls`, `wall_time`
-  and `provider_cost` describe usage. Unknown cost is `null` with
-  `cost_available=false`.
-- `failure_class` separates provider/auth, image/container, context-limit,
-  agent-stall, evaluator, infrastructure, and model-quality failures.
-
-A process exit of zero without an evaluator receipt is not a score. A reward of
-zero can be classified as model-quality evidence only after environment and
-evaluation validity are established. A provider, container, or setup failure
-is not a valid quality score.
-
-Inspect trajectory usage across all context epochs. Under
-`cost_tracking=ignore_errors`, a raw `instance_cost=0.0` may mean that no
-pricing information was available; it must not be presented as provider-
-reported cost. An interrupted process may have no `result.json`, so the
-launcher must also record its exit status and preserve partial artifacts.
-
-## Benchmark boundary
-
-This entry point targets DeepSWE's repository-level tasks. SWE-Milestone uses
-98 graded milestones grouped into seven continuous repository itineraries;
-those milestones require ordered repository state, milestone-scoped official
-receipts, predecessor handling, and an itinerary evaluator. Use the separate
-SWE-Milestone launcher and its historical implementation provenance for that
-benchmark. Do not convert a DeepSWE receipt into a SWE-Milestone result.
+After one task completes, submit the benchmark's full task manifest with
+independent workers. Each worker gets its own checkout, container name,
+scratch root, trajectory location, patch, and evaluation receipt. A task
+failure terminates and cleans up that worker only.

@@ -15,6 +15,14 @@ dependencies = ["PyYAML>=6.0"]
 [project.optional-dependencies]
 codex = ["openai-codex-cli-bin==0.144.4"]
 mini-swe-agent = ["mini-swe-agent==2.4.6"]
+multilang = [
+    "tree-sitter==0.25.2",
+    "tree-sitter-go==0.25.0",
+    "tree-sitter-java==0.23.5",
+    "tree-sitter-javascript==0.25.0",
+    "tree-sitter-rust==0.24.2",
+    "tree-sitter-typescript==0.23.2",
+]
 benchmarks = ["datasets>=2.18"]
 dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6"]
 

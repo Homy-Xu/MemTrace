@@ -1,40 +1,28 @@
 {
   "schema": "memtrace/release-gate@1",
   "package_version": "0.1.0",
-  "source_digest": "0375e0d1102d2a0bc6fee293123b3a7ca6b8a8f88d94671626a60cdc35e9036a",
-  "wheel_sha256": "8dbc2971bf4528a1403bdbe6dd405da8e0d75b84a8aef08511ac08d37dc840e9",
+  "source_digest": "704212f27f6adfc639783b497831961e9dffb5c406a7697f16d94cbf57d695c9",
+  "wheel_sha256": "4e2310b1b60e940bc213e3890c2b4a96bb20af379c679d172d3e6759b0fdfaeb",
   "offline": {
     "pytest": {
       "status": "PASSED",
-      "tests": 92
+      "tests": 91
     },
     "compileall": "PASSED",
-    "ruff_fatal": "NOT_RUN",
+    "ruff_fatal": "PASSED",
     "clean_install": "PASSED",
     "installed_receipt": "verified-installed-package"
   },
   "real_smoke": {
-    "status": "CANARY_PASSED",
-    "reason": "A single clean Docker canary completed generation and the official task evaluator. The canonical local-environment Memory Trace coordinator and the full 113-task campaign are not claimed.",
-    "scope": "mini-swe-agent-2.4.6+DeepSWE",
-    "checked_commit": "d2de921d47e40e36d529340308f3dea8f1fb6131",
-    "task_id": "adaptix-name-mapping-aliases",
-    "generation_status": "COMPLETED",
-    "evaluation_status": "COMPLETED",
-    "official_reward": 1,
-    "f2p": "44/44",
-    "p2p": "2738/2738",
-    "api_calls": 193,
-    "input_tokens": 22583682,
-    "output_tokens": 104887,
-    "total_tokens": 22688569,
-    "wall_clock_seconds": 1669.102230542805,
-    "provider_cost": null,
-    "cost_available": false,
-    "integration": "MiniSweAgentBackend+BenchmarkRunner+Docker",
-    "memory_runtime_validation": false,
-    "score_eligible": true
-  },
-  "source_archive_commit": "98e4e9860a6ea7dd0dfaf1f7982943be3ee7cad7",
-  "source_archive_parent": "d77a1fb85f2638853968c3e73da39d9a842ab682"
+    "status": "BLOCKED",
+    "reason": "No provider model or API credential was present in the release environment.",
+    "combinations": [
+      "codex+swe-milestone",
+      "codex+deepswe",
+      "codex+swe-evo",
+      "mini-swe-agent-2.4.6+swe-milestone",
+      "mini-swe-agent-2.4.6+deepswe",
+      "mini-swe-agent-2.4.6+swe-evo"
+    ]
+  }
 }
