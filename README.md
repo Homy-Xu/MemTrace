@@ -5,7 +5,7 @@
     <a href="https://github.com/Homy-Xu/MemTrace/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-2ea44f?style=flat-square" alt="Apache 2.0 license"></a>
     <img src="https://img.shields.io/badge/python-3.11%2B-3776ab?style=flat-square&logo=python&logoColor=white" alt="Python 3.11 or newer">
     <img src="https://img.shields.io/badge/mini--swe--agent-2.4.6-4b8bbe?style=flat-square" alt="mini-swe-agent 2.4.6">
-    <img src="https://img.shields.io/badge/validated%20path-DeepSWE-6f42c1?style=flat-square" alt="Validated DeepSWE path">
+    <img src="https://img.shields.io/badge/adapter-DeepSWE-6f42c1?style=flat-square" alt="DeepSWE adapter">
   </p>
 </div>
 
@@ -24,9 +24,14 @@ This repository contains two harness boundaries:
 
 - **Codex App Server**, which consumes native JSONL events and provider-managed
   context operations.
-- **mini-swe-agent 2.4.6**, whose DeepSWE adapter is the published A2-validated
-  path in this release. It records model/tool events, token usage, cost when
-  reported, wall-clock time, and the final trajectory receipt.
+- **mini-swe-agent 2.4.6**, with the DeepSWE runtime adapter from the
+  author-provided `98e4e98` archive, reported as tested on A2. It records
+  model/tool events and token usage through the shared memory runtime.
+
+The archive's reported A2 run and a new reproduction from this repository are
+separate evidence. Offline checks pass; a fresh isolated end-to-end run with an
+official evaluator receipt has not yet been established for this publication.
+See [validation status](docs/reproducibility.md#validation-status).
 
 The mini-swe-agent adapter is intentionally published under
 `src/memtrace/harness/mini_swe_agent/`. The older
@@ -76,6 +81,8 @@ in [docs/terminology.md](docs/terminology.md).
 MemTrace requires Python 3.11 or newer.
 
 ```bash
+git clone https://github.com/Homy-Xu/MemTrace.git
+cd MemTrace
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install -e '.[dev,mini-swe-agent]'
@@ -94,12 +101,20 @@ place a key in a task file, config JSON, command argument, receipt, or log.
 
 ## Run the mini-swe-agent DeepSWE adapter
 
-This is the release's supported end-to-end path. It targets a single DeepSWE
-repository task from a clean checkout and an independent run root. The profile
-uses the MemTensor Responses endpoint, a 200,000-token model context, native
-provider compaction disabled, and no numeric execution-turn limit. The wall
-clock and task/evaluator limits remain the responsibility of the benchmark
-launcher.
+This entry point runs generation for one DeepSWE repository task. Run it inside
+the task's prepared, isolated environment, with its dependencies installed and
+an independent run root. The adapter uses a **local command environment**:
+`--repository` sets the working directory; it does not start a Docker container
+or install task dependencies. The benchmark launcher must create that
+environment and run the official evaluator separately.
+
+The profile uses the MemTensor Responses endpoint and a 200,000-token context.
+mini-swe-agent's numeric step limit is disabled (`step_limit=0`), while the
+checked-in coordinator profile retains `max_execution_turns=200` and
+`wall_clock_seconds=14400` (four hours). Those runtime turns differ from tool
+calls. Single shell commands have a 1,800-second timeout; the external
+launcher must also enforce a hard deadline covering provider calls and
+evaluation.
 
 ```bash
 export MEMTENSOR_DOMESTIC_API_KEY='read-from-your-protected-secret-store'
@@ -122,29 +137,31 @@ python -m memtrace.benchmarks.mini \
   --config configs/mini_swe_agent/memtensor-deepseek-v4-flash-0731.json \
   --repository /path/to/clean/checkout \
   --task-file /path/to/deepswe-task.txt \
-  --run-root /path/to/runs/deepswe/task-id \
-  --benchmark deepswe \
-  --task-id task-id
+  --run-root /path/to/runs/deepswe/task-id
 ```
 
 The task file is supplied by the benchmark launcher and must remain unchanged.
-The run root receives the event ledger, Memory Trace state, checkpoints,
-trajectory, usage counters, patch summary, and generation receipt. Official
-DeepSWE scoring is performed by the external evaluator; local test output is
-not a substitute for an official result.
+The run root receives runtime state, workspace revisions, the trajectory, and
+`result.json` when the coordinator finishes. A launcher must bind these to the
+benchmark task ID, export the generated patch, and retain the official
+evaluation receipt. The module accepts legacy `--benchmark` and `--task-id`
+arguments but does not propagate them into runtime metadata. Local test output
+is not a substitute for an official result.
 
 The adapter uses the public mini-swe-agent 2.4.6 APIs and sanitizes replayed
 Responses items for the current MemTensor gateway. It removes unsupported
 reasoning summaries and envelope fields, normalizes message content, preserves
-function-call/output pairing, and records provider failures as receipts instead
-of silently treating them as model scores.
+function-call/output pairing. A provider exception or interrupted process is
+not a model-quality score; the launcher must retain its failure status even
+when no terminal runtime result is written.
 
 ## Integrate another task runner
 
 A custom launcher should keep benchmark orchestration outside the runtime and
 supply the same Harness lifecycle:
 
-1. create a clean repository checkout and a new run root;
+1. prepare the task image and dependencies, a benchmark-approved baseline
+   checkout, and a new run root;
 2. call `start_session` and `plan` with the exact task text;
 3. forward model/tool boundaries through `next_event` or `execute`;
 4. call `checkpoint` before a context refresh and `resume` only with that
@@ -152,11 +169,13 @@ supply the same Harness lifecycle:
 5. close the run and persist usage, generation, evaluation, and failure
    receipts.
 
-Use `memtrace.harness.mini_swe_agent.MiniSweAgentBackend` for a generic
-trajectory bridge, or
-`memtrace.harness.mini_swe_agent.MiniSweAgentHarnessAdapter` for the DeepSWE
-runtime integration. Do not reuse a mutable workspace, provider session,
-container identity, or receipt directory across attempts.
+The DeepSWE CLI connects
+`memtrace.harness.mini_swe_agent.MiniSweAgentHarnessAdapter` to `RunCoordinator`.
+`MiniSweAgentBackend` is a separate, lower-level trajectory bridge; using it
+alone does not run the complete memory runtime. Do not reuse a mutable
+workspace, provider session, container identity, or receipt directory across
+attempts. Keep evaluator tests and later solution commits outside the
+generation environment. The adapter's local environment is not a sandbox.
 
 ## Benchmark scope
 
@@ -174,6 +193,9 @@ itinerary. A runner must preserve the ordered repository stream, milestone
 predecessors, official IDs and tags, milestone-scoped acceptance, and the
 external evaluator receipt. Solving a DeepSWE issue in one checkout does not
 establish that the corresponding SWE-Milestone milestone sequence is valid.
+MemTrace may also plan internal **Execution Milestones** for a single DeepSWE
+task. Those are runtime work units, not the benchmark's official milestone IDs
+and not independently scored examples.
 The seven official milestone counts are go-zero 23, Navidrome 9,
 element-web 18, Nushell 13, ripgrep 11, Dubbo 12, and scikit-learn 12.
 
@@ -190,12 +212,13 @@ must not be inferred from this release.
 
 ## Receipts and reproducibility
 
-Every public receipt is redacted and records the benchmark and task identity,
-Harness and version, source digest, generation status, evaluation status,
-official score when available, F2P/P2P counts where the evaluator provides
-them, wall-clock time, input/output/total tokens, provider-reported cost, and
-failure class. A missing provider cost is represented as `null` with an
-unavailable flag; it is never reported as a real zero.
+Runtime outputs and raw trajectories are private artifacts. Before publishing
+a result, the launcher must create a redacted manifest binding the task,
+Harness, source digest, generation status, official evaluation, F2P/P2P,
+wall-clock time, token usage, and failure class. Use provider-reported cost
+when available. mini-swe-agent's raw `instance_cost=0.0` with
+`cost_tracking=ignore_errors` is not evidence of a free run; report unavailable
+cost as `null` with `cost_available=false` in the result manifest.
 
 Use the offline checks before a provider run:
 
@@ -225,7 +248,7 @@ src/memtrace/
 ├── context_runtime/          Working Memory and Context Refresh
 ├── rich_graph/               Repository State Graph indexing
 ├── harness/codex/            Codex App Server backend
-├── harness/mini_swe_agent/  mini-swe-agent 2.4.6 backends and DeepSWE adapter
+├── harness/mini_swe_agent/    mini-swe-agent 2.4.6 backends and DeepSWE adapter
 └── benchmarks/               shared runner and benchmark bridges
 ```
 

@@ -83,7 +83,10 @@ those capabilities instead of fabricating parity.
 The event ledger is append-only. Each event carries a run, branch, revision,
 source event, provider method, normalized payload, and a raw-provider summary.
 Credentials, private host paths, raw trajectories, and hidden prompts are
-redacted or excluded from public receipts.
+private artifacts; an external launcher must redact result manifests before
+publication. The DeepSWE adapter uses a local command environment and does not
+provide container isolation or an official evaluator. Those remain launcher
+responsibilities, as described in [deepswe-reproduction.md](deepswe-reproduction.md).
 
 Stable source-level compatibility names remain in the implementation and
 serialized schemas. The public vocabulary is defined in

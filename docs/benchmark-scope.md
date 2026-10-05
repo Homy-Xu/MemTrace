@@ -35,6 +35,14 @@ milestone-scoped patch/tag, and submit a separate official receipt. Its main
 metrics are Score, Precision, Recall, and Resolved Rate. A DeepSWE patch,
 trajectory, or score cannot be substituted for those receipts.
 
+The runtime also creates internal **Execution Milestones** while planning a
+DeepSWE task. These organize work within that task; they do not correspond to
+SWE-Milestone's official IDs, evaluator tags, or scored units. A targeted
+SWE-Milestone adapter must make that mapping explicit, preserve per-ID commit
+anchors and retry accounting, and retain one official receipt per scored
+attempt. The current mini-swe-agent CLI rejects the repository-stream and
+SWE-Milestone verifier options rather than claiming those semantics.
+
 The current repository keeps compatibility contracts and historical
 SWE-Milestone integration code, but this release does not claim a new
 mini-swe-agent SWE-Milestone run. The high-scoring historical implementation

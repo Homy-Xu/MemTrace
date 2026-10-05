@@ -1,9 +1,11 @@
 # DeepSWE reproduction with mini-swe-agent 2.4.6
 
-This document describes the public mini-swe-agent path for one DeepSWE task.
-It is the release's A2-validated integration boundary. Private task prompts,
-cluster paths, scheduler files, Docker sockets, raw trajectories, and provider
-credentials are intentionally excluded.
+This document describes the mini-swe-agent adapter imported from the
+author-provided `98e4e98` archive, reported as tested on A2. The source archive
+and a new official benchmark reproduction have separate provenance; see
+[validation status](reproducibility.md#validation-status). Private task
+prompts, cluster paths, scheduler files, raw trajectories, and credentials are
+excluded.
 
 ## Install
 
@@ -44,7 +46,10 @@ The public profile is
 | Credential variable | `MEMTENSOR_DOMESTIC_API_KEY` |
 | Model context | 200,000 tokens |
 | Provider compaction | disabled; Context Refresh is runtime-owned |
-| Numeric execution-turn limit | none in the agent profile |
+| mini-swe-agent numeric step limit | `0` (disabled) |
+| Coordinator execution-turn budget | `200`; a runtime turn can contain multiple model/tool calls |
+| Coordinator wall-clock budget | `14400` seconds (four hours) |
+| Single shell-command timeout | `1800` seconds |
 | Memory runtime | Planning, Memory Trace formation, Trace Recall, Working Memory, MTG/RSG alignment |
 | Acceptance budget | weak progress 4; no progress 2; semantic review 2; unclaimed boundaries 3 |
 | Engagement | full |
@@ -54,6 +59,32 @@ normalizes message IDs and input content, converts unsupported reasoning items
 to assistant text, removes unsupported function-call fields, strips replayed
 Responses envelopes, and appends a diagnostic output for an unmatched call.
 The original trajectory remains the usage source.
+
+These are the checked-in archive defaults, not a claim that this profile
+matches every paper experiment's budget. A launcher must enforce its own hard
+deadline, including blocked provider requests and evaluator execution.
+
+## Prepare the task environment
+
+The adapter executes commands locally through mini-swe-agent's
+`LocalEnvironment`. Run the CLI **inside** the task's prepared environment;
+passing `--repository` does not load an image, create a container, install
+dependencies, or restrict filesystem access.
+
+The external launcher is responsible for the following:
+
+- Lock the task ID, task text, baseline commit, image digest, and source digest.
+- Provide the benchmark's dependencies and test tools before generation.
+- Expose only the task workspace and permitted assets. Later upstream solution
+  commits, other task workspaces, and hidden evaluator tests must be
+  inaccessible.
+- Use a separate writable run root and a hard task deadline. Do not expose a
+  host Docker socket to the agent.
+- Export the patch and run the official evaluator in a separate environment.
+
+Use the task's declared working directory (for example `/app` or `/testbed`).
+Installing MemTrace in a launcher environment does not install the task's own
+dependencies in its command environment.
 
 ## Run one clean task
 
@@ -76,20 +107,22 @@ python -m memtrace.benchmarks.mini \
   --config configs/mini_swe_agent/memtensor-deepseek-v4-flash-0731.json \
   --repository /path/to/clean/checkout \
   --task-file /path/to/deepswe-task.txt \
-  --run-root /path/to/runs/deepswe/task-id \
-  --benchmark deepswe \
-  --task-id task-id
+  --run-root /path/to/runs/deepswe/task-id
 ```
 
-Each task needs a new checkout and run root. The run root contains the event
-ledger, Trace Store, Memory Index, checkpoints, trajectory, patch summary,
-usage counters, and final receipt. A task-specific exception ends that task
-and does not reuse another task's workspace.
+Each task needs a new checkout and run root. Runtime artifacts include
+`v2-state.sqlite3`, `rich-graph.sqlite3`, `workspace-revisions/`,
+`mini-swe-agent/trajectory.json`, archived context epochs, and `result.json`
+when the coordinator finishes. The benchmark launcher must export the patch
+and associate it with the exact task and evaluator result. Legacy
+`--benchmark` and `--task-id` arguments are accepted by the module but ignored;
+store those identities in the launcher's manifest.
 
 ## Receipt interpretation
 
-The generation receipt is independent from the official evaluation receipt.
-Read both before assigning a score:
+The runtime result is independent from the official evaluation receipt. The
+following fields are requirements for the launcher's combined manifest, not
+fields guaranteed to be emitted together by this CLI:
 
 - `generation_status` describes whether the Harness produced a terminal patch
   or a classified runtime failure.
@@ -102,8 +135,15 @@ Read both before assigning a score:
   agent-stall, evaluator, infrastructure, and model-quality failures.
 
 A process exit of zero without an evaluator receipt is not a score. A reward of
-zero with complete generation and evaluation is model-quality evidence; a
-provider or container failure is not.
+zero can be classified as model-quality evidence only after environment and
+evaluation validity are established. A provider, container, or setup failure
+is not a valid quality score.
+
+Inspect trajectory usage across all context epochs. Under
+`cost_tracking=ignore_errors`, a raw `instance_cost=0.0` may mean that no
+pricing information was available; it must not be presented as provider-
+reported cost. An interrupted process may have no `result.json`, so the
+launcher must also record its exit status and preserve partial artifacts.
 
 ## Benchmark boundary
 

@@ -18,17 +18,31 @@ DeepSWE image, task manifest, and evaluator. A public checkout cannot claim an
 official score from local tests. The release manifest records the offline gate
 and whether a provider smoke was available at build time.
 
-## A2 validation boundary
+## Validation status
 
-The uploaded source line was exercised on A2 with mini-swe-agent 2.4.6 and the
-MemTensor Responses endpoint. Private run roots, image references, scheduler
-configuration, credentials, raw trajectories, and evaluator workspaces remain
-outside this repository. Re-run from a clean checkout and bind the resulting
-receipt to the exact source digest and wheel SHA before reporting a result.
+The author-provided `98e4e98` archive is reported as tested on A2 with
+mini-swe-agent 2.4.6. Its original official evaluator archive is not bundled
+with this publication. This provenance is distinct from a new reproduction.
+
+A fresh check of publication commit `3e7174d` reached 186 MemTensor API calls
+but was stopped and excluded from scoring. Its external launcher ran
+generation on the host without the prepared task dependencies and retained
+upstream Git refs beyond the task baseline; the agent accessed those refs.
+No official evaluator result was produced. This is a launcher/environment
+validation failure, not a measured model-quality result. The earlier request
+serialization errors did not recur in that check, which is narrower evidence
+than a successful end-to-end benchmark run.
+
+The release therefore has offline validation but no newly established isolated
+end-to-end reproduction. A new run must use the task's prepared environment,
+benchmark-approved repository history, and separate evaluator. Bind its
+receipts to the source digest, wheel SHA, task, and image before reporting a
+result. Private run roots, scheduler configuration, credentials, raw
+trajectories, and evaluator workspaces remain outside this repository.
 
 ## Receipt requirements
 
-Every task receipt should contain:
+The external launcher's redacted task manifest should contain:
 
 - generation status and patch/trajectory identity;
 - evaluation status and official score, when the external evaluator publishes it;
@@ -41,8 +55,9 @@ Every task receipt should contain:
 Provider/auth, image/container, context-limit, agent-stall, evaluator,
 infrastructure, and model-quality failures are separate classes. A process
 exit of zero without an evaluator receipt is not a score. A reward of zero
-with complete generation and evaluation is model-quality evidence; a provider
-or container failure is not.
+with valid generation and evaluation can be model-quality evidence. A provider,
+container, or setup failure is not. A trajectory cost of zero under
+`cost_tracking=ignore_errors` is insufficient to establish a measured cost.
 
 ## Benchmark boundary
 

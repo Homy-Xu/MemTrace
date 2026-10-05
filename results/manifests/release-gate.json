@@ -14,9 +14,14 @@
     "installed_receipt": "verified-installed-package"
   },
   "real_smoke": {
-    "status": "NOT_PUBLISHED",
-    "reason": "The A2 provider run is represented by private receipts; this public tree contains no credential, task image, raw trajectory, or official evaluator receipt.",
-    "scope": "mini-swe-agent-2.4.6+DeepSWE"
+    "status": "NOT_VALIDATED",
+    "reason": "The archive is author-reported as tested on A2. A fresh publication check was invalidated by host environment mismatch and exposure of upstream Git refs; it produced no official score.",
+    "scope": "mini-swe-agent-2.4.6+DeepSWE",
+    "checked_commit": "3e7174dcce19be3490edfc24237e01364d7fa2f7",
+    "api_calls_observed": 186,
+    "evaluation_status": "NOT_RUN",
+    "official_score": null,
+    "score_eligible": false
   },
   "source_archive_commit": "98e4e9860a6ea7dd0dfaf1f7982943be3ee7cad7",
   "source_archive_parent": "d77a1fb85f2638853968c3e73da39d9a842ab682"
